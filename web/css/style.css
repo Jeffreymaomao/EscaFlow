@@ -1,0 +1,101 @@
+* {
+  box-sizing: border-box;
+  position: relative;
+}
+
+@font-face {
+    font-family: 'CMBX10';
+    src: url('font/cmbx10.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+body {
+    font-family: monospace, sans-serif;
+    margin: 0;
+    overflow: hidden;
+}
+
+.CM {
+    font-family: 'CMBX10', sans-serif;
+}
+
+header {
+    position: fixed;
+    width: 100vw;
+    background: rgba( 255, 255, 255, 0.3 );
+            backdrop-filter: blur( 2.5px );
+    -webkit-backdrop-filter: blur( 2.5px );
+    border: 1px solid rgba( 255, 255, 255, 0.18 );
+
+    z-index: 1000;
+    padding: 5px;
+}
+
+h1 {
+    text-transform: uppercase;
+    margin: auto;
+    padding: 0;
+    padding-top: 10px;
+    padding-bottom: 2px;
+    margin: 0;
+    text-align: center;
+    font-size: 1em;
+    color: #fff;
+}
+
+h1 .big {
+    font-size: 1.4em;
+}
+
+h2 {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 100%);
+    text-transform: uppercase;
+    margin: auto;
+    padding: 0;
+    padding-top: 10px;
+    padding-bottom: 2px;
+    margin: 0;
+    text-align: center;
+    font-size: 0.8em;
+    color: #fff;
+}
+
+h2 .big {
+    font-size: 1.3em;
+}
+
+#gui {
+    position: absolute;
+    bottom: -1px;
+    right: 0;
+    transform: translate(0, 100%);
+}
+
+#stats {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    transform: translate(0, 100%);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
