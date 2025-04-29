@@ -21,7 +21,7 @@ const user = {
 };
 // ------------------------------------------
 const escalators = [];
-const count = 10;
+const count = 3;
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const escalator = new Escalator({
