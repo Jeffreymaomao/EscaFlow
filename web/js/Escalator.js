@@ -9,6 +9,7 @@ export default class Escalator {
         this.rotation = config.rotation || [Math.PI/2, 0, 0];
         this.object = null;
         this.size = new THREE.Vector3();
+        this.box  = new THREE.Box3();
 
         this.pad = 2;
         this.count = 15;
@@ -21,6 +22,8 @@ export default class Escalator {
 
         this.ymax = this.count * this.dy + this.y0;
         this.zmax = this.count * this.dz + this.z0;
+
+        this.groundPosition = new THREE.Vector3(0, 0, -0.24).add(this.position);
     }
 
     load(scene, onLoadCallback = null) {
@@ -36,8 +39,9 @@ export default class Escalator {
             scene.add(this.object);
             if (onLoadCallback) onLoadCallback(this.object);
 
-            const bbox = new THREE.Box3().setFromObject(this.object);
-            bbox.getSize(this.size);
+            this.box = new THREE.Box3().setFromObject(this.object);
+            this.box.getSize(this.size);
+            this.updateThisHalfSize()
 
             this.addStairs(scene);
             this.addGround(scene);
@@ -45,6 +49,21 @@ export default class Escalator {
         }, undefined, (error) => {
             console.error('Failed to load GLB:', error);
         });
+    }
+
+    updateThisHalfSize() {
+        this.halfSize = new THREE.Vector3(
+            this.size.x * 0.85 / 2,
+            this.dy / 2,
+            this.dz / 2
+        );
+    }
+
+    getStairBox(singleStairPosition) {
+        return new THREE.Box3(
+            singleStairPosition.clone().sub(this.halfSize),
+            singleStairPosition.clone().add(this.halfSize)
+        );
     }
 
     applyMaterial(child) {
@@ -92,8 +111,7 @@ export default class Escalator {
         });
 
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.position.set(0, 0, -0.24);
-        floor.position.add(this.position);
+        floor.position.set(...this.groundPosition);
         scene.add(floor);
     }
 
@@ -155,11 +173,52 @@ export default class Escalator {
                 pos.y = this.y0 - this.pad*this.dy;
                 pos.z = this.z0 - this.pad*this.dz;
             }
-
+            this.stairsPosition[i] = pos;
             const matrix = new THREE.Matrix4();
             matrix.setPosition(pos);
             this.staisMesh.setMatrixAt(i, matrix);
         }
         this.staisMesh.instanceMatrix.needsUpdate = true;
     }
+
+    getStairSurfacePointIfCollision(personPos, personBox) {
+        if (!this.stairsPosition) return null;
+        const porsonHalf = personBox.getSize(new THREE.Vector3()).divideScalar(2);
+        for (let stair of this.stairsPosition) {
+            const stairBox = this.getStairBox(stair);
+            if (stairBox.intersectsBox(personBox)) {
+
+                if (personBox.min.x < stairBox.min.x) {
+                    personPos.x = stairBox.min.x - porsonHalf.x - 1e-5;
+                } else if (personBox.max.x > stairBox.max.x) {
+                    personPos.x = stairBox.max.x + porsonHalf.x + 1e-5;
+                }
+
+                return new THREE.Vector3(
+                    personPos.x,
+                    personPos.y,
+                    stairBox.max.z + porsonHalf.z + 1e-5
+                );
+            }
+        }
+
+        // const escaBox = this.box;
+        // if (escaBox.intersectsBox(personBox)) {
+        //     if (personBox.max.x > escaBox.min.x) {
+        //         personPos.x = escaBox.min.x - porsonHalf.x - 1e-5;
+        //     } else if (personBox.min.x < escaBox.max.x) {
+        //         personPos.x = escaBox.max.x + porsonHalf.x + 1e-5;
+        //     }
+        // }
+
+        if (personPos.z-porsonHalf.z< this.groundPosition.z) {
+            return new THREE.Vector3(
+                personPos.x,
+                personPos.y,
+                this.groundPosition.z+porsonHalf.z + 1e-5
+            );
+        }
+        return null;
+    }
+
 }
