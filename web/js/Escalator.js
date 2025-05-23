@@ -23,6 +23,11 @@ export default class Escalator {
         this.ymax = this.count * this.dy + this.y0;
         this.zmax = this.count * this.dz + this.z0;
 
+        this.enteringPoint  = new THREE.Vector3(
+            this.x0,
+            this.y0 - 3*this.dy,
+            this.z0
+        );
         this.groundPosition = new THREE.Vector3(0, 0, -0.24).add(this.position);
     }
 
@@ -179,6 +184,36 @@ export default class Escalator {
             this.staisMesh.setMatrixAt(i, matrix);
         }
         this.staisMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    sphKernel(r, h) {
+        const q = r / h;
+        if (q < 0) return 0;
+        if (q <= 0.5) {
+            return 1 - 6*q*q + 6*q*q*q;
+        } else if (q <= 1.0) {
+            return 2 * Math.pow(1 - q, 3);
+        }
+        return 0;
+    }
+
+    getForceByWall(personPos, personBox) {
+        const box = this.box;
+        if (personBox.max.y < this.enteringPoint.y) {
+            return new THREE.Vector3(0, 0, 0);
+        }
+        const dr2R = personBox.min.x - box.max.x;
+        if (dr2R > 0) {
+            const fy = this.sphKernel(dr2R, this.dy);
+            return new THREE.Vector3(fy, 0, 0);
+        }
+        
+        const dr2L = box.min.x - personBox.max.x;
+        if (dr2L > 0) {
+            const fy = this.sphKernel(dr2L, this.dy);
+            return new THREE.Vector3(-fy, 0, 0);
+        }
+        return new THREE.Vector3(0, 0, 0);
     }
 
     getStairSurfacePointIfCollision(personPos, personBox) {

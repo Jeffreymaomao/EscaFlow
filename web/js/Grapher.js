@@ -9,7 +9,8 @@ class Grapher {
         gui:false,
         cameraMinDistance: 1,
         cameraMaxDistance: 10,
-        backgroundColor: 0x000000,
+        backgroundColor: 0xffffff,
+        backgroundImage: null,
     }) {
         this.scene = new THREE.Scene();
         this.axisLength = config.axisLength || 1;
@@ -45,21 +46,23 @@ class Grapher {
             this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        const loader = new RGBELoader();
-        loader.load('img/rostock_laage_airport_2k.hdr', (texture) => {
-            texture.mapping = THREE.EquirectangularReflectionMapping;
-            this.scene.environment = texture;
+        if (config.backgroundImage) {
+            const loader = new RGBELoader();
+            loader.load(config.backgroundImage, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                this.scene.environment = texture;
 
-            const geometry = new THREE.SphereGeometry(500, 60, 40);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.BackSide,
-                toneMapped: false
+                const geometry = new THREE.SphereGeometry(500, 60, 40);
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    side: THREE.BackSide,
+                    toneMapped: false
+                });
+                this.skyMesh = new THREE.Mesh(geometry, material);
+                this.scene.add(this.skyMesh);
+                this.skyMesh.rotation.x = Math.PI/2;
             });
-            this.skyMesh = new THREE.Mesh(geometry, material);
-            this.scene.add(this.skyMesh);
-            this.skyMesh.rotation.x = Math.PI/2;
-        });
+        }
     }
 
     init() {

@@ -14,7 +14,8 @@ const grapher = new Grapher({
     axisLength: 1.0,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
-    backgroundColor: 0xbbbbbb,
+    backgroundColor: 0xeeeeee,
+    // backgroundImage: 'img/rostock_laage_airport_2k.hdr'
 });
 // ------------------------------------------
 const user = {
@@ -23,7 +24,7 @@ const user = {
 // ------------------------------------------
 const escalators = [];
 const crowds =[];
-const count = 0;
+const count = 1;
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const offset = new THREE.Vector3(x*10, y*10 - 2, -0.5);
@@ -34,7 +35,7 @@ for (var x = -count; x <= count; x+=1) {
         });
         escalators.push(escalator);
         const crowd = new Crowd(grapher.renderer, {
-            count: 100,
+            count: 200,
             position: offset
         });
         crowd.addToScene(grapher.scene);
@@ -44,6 +45,12 @@ for (var x = -count; x <= count; x+=1) {
 window.addEventListener('load', () => {
     escalators.forEach((escalator) => {
         escalator.load(grapher.scene);
+        const line = grapher.addLine(
+            [...escalator.enteringPoint],
+            [...escalator.enteringPoint.clone().add(
+                new THREE.Vector3(0, 0, 3)
+            )]
+        )
     });
 });
 // ------------------------------------------
@@ -54,18 +61,34 @@ const crowdSize = new THREE.Vector3(
     crowds[0].height
 );
 const clock = new THREE.Clock();
+const gravity = new THREE.Vector3(0, 0, -9.8);
+
 grapher.animate = function() {
+    const dt = Math.max(clock.getDelta(), 1e-3);
     if(user.pause) return;
     escalators.forEach((escalator, index) => {
-        escalator.update(clock.getDelta());
+        escalator.update(dt);
         // === updata human ===
         const crowd = crowds[index];
-        crowd.update((pos, box, i)=>{
-            pos.z -= 0.1;
-            const newPos = escalator.getStairSurfacePointIfCollision(pos, box);
-            if (newPos) {
-                pos.copy(newPos);
+        crowd.update((pos, vel, box, i)=>{
+            const repulsion = crowd.getRepulsionFromOthers(i, pos);
+            const goToStairs = escalator.enteringPoint.clone().sub(pos);
+            const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box);
+            const wallForce  = escalator.getForceByWall(pos, box);
+            if (onStairPos) {
+                // vel.x = 0;
+                // vel.y = 0;
+                vel.z = 0;
+                onStairPos.y += escalator.dy * dt;
+                pos.copy(onStairPos);
+                return;
             }
+            vel.addScaledVector(goToStairs,  4.0*dt);
+            vel.addScaledVector(repulsion,   20.0*dt);
+            vel.addScaledVector(wallForce,  100.0*dt);
+            vel.addScaledVector(vel,        -10.0*dt);
+            vel.addScaledVector(gravity, dt);
+            pos.addScaledVector(vel, dt);
         });
     });
 };
