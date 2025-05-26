@@ -6,14 +6,16 @@ export default class Crowd {
         this.count    = config.count || 100;
         this.depth    = config.radius || 0.1;
         this.width    = config.radius || 0.2;
-        this.height   = config.height || 0.5;
+        this.height   = config.height || 0.6;
         this.color    = config.color || 0x92CC92;
         this.position = config.position || new THREE.Vector3();
         this.halfSize = new THREE.Vector3(
             this.width / 2, this.depth / 2, this.height / 2
         );
         this.textureSize = Math.ceil(Math.sqrt(this.count));
-        this.repulsionSize = Math.max(this.width, this.depth) * 3;
+        this.widthHeight = this.width * this.height;
+        this.minPeopleDistance = Math.max(this.width, this.depth) * 3;
+        this.repulsionSize = this.minPeopleDistance * 3;
 
         this.geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
         this.geometry.rotateX(Math.PI / 2);
@@ -27,22 +29,51 @@ export default class Crowd {
         this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         this.positions  = new Array(this.count).fill(null);
         this.velocities = new Array(this.count).fill(null);
+    }
 
+    initializePositions(avoidBox=null, maxAttempts=200) {
+        const initializeRandomDistance = Math.max(
+            30 / Math.sqrt(this.count) * this.minPeopleDistance, 10
+        );
         const matrix = new THREE.Matrix4();
         for (let i = 0; i < this.count; i++) {
-            const x = 3*(Math.random() - 0.5);
-            const y = 3*(Math.random() - 0.5);
-            const z = this.height*0.5 - 0.239;
+            let attempts = 0;
+            let pos;
+            let isValid = false;
 
-            const pos = new THREE.Vector3(x, y, z).add(this.position);
-            this.positions[i] = pos;
-            this.velocities[i] = new THREE.Vector3(0, 0, 0);
+            while (attempts < maxAttempts && !isValid) {
+                const theta = Math.random() * 2 * Math.PI;
+                const radii = Math.random();
+                const xx = initializeRandomDistance * radii * Math.cos(theta);
+                const yy = initializeRandomDistance * radii * Math.sin(theta);
+                const zz = this.height * 0.5 - 0.239;
+                pos = new THREE.Vector3(xx, yy, zz).add(this.position);
 
-            matrix.setPosition(pos);
-            this.mesh.setMatrixAt(i, matrix);
+                isValid = true;
+                if (avoidBox && avoidBox.containsPoint(pos)) {
+                    isValid = false;
+                    continue;
+                }
+                for (let j = 0; j < i; j++) {
+                    if (pos.distanceTo(this.positions[j]) < this.minPeopleDistance) {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                attempts++;
+            }
+            this.positions[i]  = pos;
+
+            if (!isValid) {
+                console.warn(`Could not find non-colliding position after ${maxAttempts} attempts`);
+            }
+
+            const vx = 0.5*(Math.random() - 0.5);
+            const vy = 0.5*(Math.random() - 0.5);
+            this.velocities[i] = new THREE.Vector3(vx, vy, -1);
         }
-
-        this.mesh.instanceMatrix.needsUpdate = true;
+        this.update();
     }
 
     addToScene(scene) {
@@ -67,16 +98,26 @@ export default class Crowd {
         return 0;
     }
 
+    getAnisotropicDistance(dr) {
+        return this.widthHeight * Math.sqrt(
+            (dr.x / this.depth)**2 + 
+            (dr.y / this.width)**2 + dr.z**2
+        );
+    }
+
     getRepulsionFromOthers(i, pos) {
         const force = new THREE.Vector3();
+        const dr = new THREE.Vector3();
         const h = this.repulsionSize;
         for (let j = 0; j < this.count; j++) {
             if (i === j) continue;
-            const dr = pos.clone().sub(this.positions[j]);
-            const r = dr.length();
+            dr.copy(pos).sub(this.positions[j]);
+            // const r = dr.length();
+            const r = this.getAnisotropicDistance(dr);
             if (r > 1e-3 && r < h) {
-                const weight = this.sphKernel(r*r, h);
-                force.add(dr.normalize().multiplyScalar(weight));
+                force.add(dr.normalize().multiplyScalar(
+                    this.sphKernel(r*r, h)
+                ));
             }
         }
         force.z = 0.0;
@@ -84,13 +125,28 @@ export default class Crowd {
     }
 
 
-    update(callback) {
+    update(callback=()=>{}) {
         const matrix = new THREE.Matrix4();
+        const quaternion = new THREE.Quaternion();
+        const euler = new THREE.Euler();
+        const up = new THREE.Vector3(0, 0, 1);
+        const Half_PI = Math.PI*0.5
+
         for (let i = 0; i < this.count; i++) {
             const pos = this.positions[i];
             const vel = this.velocities[i];
             const box = this.getPersonBox(pos);
             callback(pos, vel, box, i);
+            
+            matrix.identity();
+            const vx = vel.x;
+            const vy = vel.y;
+            if (vx*vx + vy*vy > 1e-6) {
+                euler.set(0, 0, Half_PI - Math.atan2(vy, vx));
+                quaternion.setFromEuler(euler);
+                matrix.makeRotationFromQuaternion(quaternion);
+            }
+
             matrix.setPosition(pos);
             this.mesh.setMatrixAt(i, matrix);
         }
