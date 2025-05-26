@@ -17,8 +17,8 @@ class Grapher {
         this.axisLabels = [undefined, undefined, undefined];
         this.backgroundColor = config.backgroundColor;
 
-        this.cameraMinDistance = config.cameraMinDistance || 1;
-        this.cameraMaxDistance = config.cameraMaxDistance || 10;
+        this.cameraMinDistance  = config.cameraMinDistance || 1;
+        this.cameraMaxDistance  = config.cameraMaxDistance || 10;
         this.initCameraPosition = config.cameraPosition || new THREE.Vector3(1.8, 1.8, 1.8);
 
         if(config.gui) {
@@ -105,23 +105,22 @@ class Grapher {
         this.camera.position.set(this.initCameraPosition.x, this.initCameraPosition.y, this.initCameraPosition.z);
         this.camera.up.set(0, 0, 1);
         this.camera.lookAt(0, 0, 0);
-
     }
 
     initLight() {
-        const DL1 = new THREE.DirectionalLight(0xffffff, 5.0);
+        const DL1 = new THREE.DirectionalLight(0xffffff, 4.0);
         DL1.position.set(-1, 1, 1);
         DL1.target.position.set(0, 0, 0);
         DL1.castShadow = true;
         this.scene.add(DL1);
 
-        const DL2 = new THREE.DirectionalLight(0xffffff, 5.0);
-        DL2.position.set(1, 1, 1);
+        const DL2 = new THREE.DirectionalLight(0xffffff, 4.0);
+        DL2.position.set(1, -0.2, 1);
         DL2.target.position.set(0, 0, 0);
         DL2.castShadow = true;
         this.scene.add(DL2);
         
-        const ambient = new THREE.AmbientLight(0xffffff, 1);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.1);
         this.scene.add(ambient);
     }
 
@@ -175,8 +174,9 @@ class Grapher {
     saveCameraState (camera, controls) {
         const state = {
             position: {x: camera.position.x, y: camera.position.y, z: camera.position.z,},
-            target: {x: controls.target.x, y: controls.target.y, z: controls.target.z,},
+            target:   {x: controls.target.x, y: controls.target.y, z: controls.target.z,},
         };
+        state.target.x = 0; state.target.y = 0;
         window.localStorage.setItem('cameraState', JSON.stringify(state));
     }
 
