@@ -10,15 +10,17 @@ export default class Escalator {
         this.object = null;
         this.size = new THREE.Vector3();
         this.box  = new THREE.Box3();
+        this.groundSize = config.groundSize || new THREE.Vector2(1.0, 1.0);
 
+        const guessCount = this.url?.split('-').pop().split('.').shift();
+        this.count = config.count || parseInt(guessCount) || 15;
         this.pad = 2;
-        this.count = 15;
-        this.dy = 0.226;
-        this.dz = 0.128;
+        this.dy =  0.226;
+        this.dz =  0.128;
         this.x0 =  0.00 + this.position.x;
         this.y0 =  0.49 + this.position.y;
         this.z0 = -0.22 + this.position.z;
-        this.dt = 0.01;
+        this.dt =  0.01;
 
         this.ymax = this.count * this.dy + this.y0;
         this.zmax = this.count * this.dz + this.z0;
@@ -42,7 +44,6 @@ export default class Escalator {
             this.object.rotation.set(...this.rotation);
 
             scene.add(this.object);
-            if (onLoadCallback) onLoadCallback(this.object);
 
             this.box = new THREE.Box3().setFromObject(this.object);
             this.box.getSize(this.size);
@@ -50,7 +51,7 @@ export default class Escalator {
 
             this.addStairs(scene);
             this.addGround(scene);
-
+            if (onLoadCallback) onLoadCallback(this.object);
         }, undefined, (error) => {
             console.error('Failed to load GLB:', error);
         });
@@ -107,11 +108,11 @@ export default class Escalator {
     }
 
     addGround(scene) {
-        const floorGeometry = new THREE.PlaneGeometry(4, 4);
+        const floorGeometry = new THREE.PlaneGeometry(this.groundSize.x, this.groundSize.y);
         const floorMaterial = new THREE.MeshStandardMaterial({
             color: 0x333333,
-            roughness: 0.8,
-            metalness: 0.2,
+            roughness: 0.99,
+            metalness: 0.1,
             side: THREE.DoubleSide
         });
 
@@ -158,28 +159,30 @@ export default class Escalator {
         scene.add(endStairMesh);
     }
 
+    getVelocity(pos) {
+        const bufferLength = 0.3;
+        const distanceToTop = Math.abs(this.zmax - pos.z);
+        let dzFactor = 1.0;
+        if (distanceToTop < bufferLength) {
+            dzFactor = distanceToTop / bufferLength;
+            dzFactor = Math.max(dzFactor, 0.05);
+        }
+        return new THREE.Vector3(0, this.dy, this.dz * dzFactor);
+    }
+
     update(dt) {
         if(!this.staisMesh || !this.stairsPosition) return;
+        const matrix = new THREE.Matrix4();
         for (let i = 0; i < this.count+this.pad; i++) {
             const pos = this.stairsPosition[i];
+            const vel = this.getVelocity(pos);
+            pos.addScaledVector(vel, dt);
 
-            const bufferLength = 0.3;
-            const distanceToTop = Math.abs(this.zmax - pos.z);
-            let dzFactor = 1.0;
-            if (distanceToTop < bufferLength) {
-                dzFactor = distanceToTop / bufferLength;
-                dzFactor = Math.max(dzFactor, 0.05);
-            }
-
-            pos.y += this.dt*this.dy;
-            pos.z += this.dt*this.dz * dzFactor;
-
-            if (pos.z > this.zmax+this.dz*0.1|| pos.y > this.ymax+this.dy*0.1) {
+            if (pos.z > this.zmax+this.dz*0.1 || pos.y > this.ymax+this.dy*0.1) {
                 pos.y = this.y0 - this.pad*this.dy;
                 pos.z = this.z0 - this.pad*this.dz;
             }
             this.stairsPosition[i] = pos;
-            const matrix = new THREE.Matrix4();
             matrix.setPosition(pos);
             this.staisMesh.setMatrixAt(i, matrix);
         }
@@ -216,17 +219,18 @@ export default class Escalator {
         return new THREE.Vector3(0, 0, 0);
     }
 
-    getStairSurfacePointIfCollision(personPos, personBox) {
+    getStairSurfacePointIfCollision(personPos, personBox, porsonHalf) {
         if (!this.stairsPosition) return null;
-        const porsonHalf = personBox.getSize(new THREE.Vector3()).divideScalar(2);
         for (let stair of this.stairsPosition) {
             const stairBox = this.getStairBox(stair);
             if (stairBox.intersectsBox(personBox)) {
-
-                if (personBox.min.x < stairBox.min.x) {
-                    personPos.x = stairBox.min.x - porsonHalf.x - 1e-5;
-                } else if (personBox.max.x > stairBox.max.x) {
-                    personPos.x = stairBox.max.x + porsonHalf.x + 1e-5;
+                const handrailMargin = 0.32;
+                const adjustedMinX = stairBox.min.x + handrailMargin;
+                const adjustedMaxX = stairBox.max.x - handrailMargin;
+                if (personBox.min.x < adjustedMinX) {
+                    personPos.x = adjustedMinX - porsonHalf.x - 1e-5;
+                } else if (personBox.max.x > adjustedMaxX) {
+                    personPos.x = adjustedMaxX + porsonHalf.x + 1e-5;
                 }
 
                 return new THREE.Vector3(
@@ -236,16 +240,10 @@ export default class Escalator {
                 );
             }
         }
+        return null;
+    }
 
-        // const escaBox = this.box;
-        // if (escaBox.intersectsBox(personBox)) {
-        //     if (personBox.max.x > escaBox.min.x) {
-        //         personPos.x = escaBox.min.x - porsonHalf.x - 1e-5;
-        //     } else if (personBox.min.x < escaBox.max.x) {
-        //         personPos.x = escaBox.max.x + porsonHalf.x + 1e-5;
-        //     }
-        // }
-
+    getGroundCorrectionPointIfBelow(personPos, personBox, porsonHalf) {
         if (personPos.z-porsonHalf.z< this.groundPosition.z) {
             return new THREE.Vector3(
                 personPos.x,
