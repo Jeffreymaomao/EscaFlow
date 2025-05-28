@@ -46,7 +46,7 @@ export default class Crowd {
                 const theta = Math.random() * 2 * Math.PI;
                 const radii = Math.random();
                 const xx = initializeRandomDistance * radii * Math.cos(theta);
-                const yy = initializeRandomDistance * radii * Math.sin(theta);
+                const yy = initializeRandomDistance * radii * Math.sin(theta) - 10;
                 const zz = this.height * 0.5 - 0.239;
                 pos = new THREE.Vector3(xx, yy, zz).add(this.position);
 
@@ -99,8 +99,9 @@ export default class Crowd {
         return 0;
     }
 
-    isPersonAlreadyBumpIntoOther(pos) {
+    isPersonAlreadyBumpIntoOther(pos, i) {
         for (let j = 0; j < this.count; j++) {
+            if (i === j) continue; // skip self
             if (pos.distanceTo(this.positions[j]) < this.minPeopleDistance * 0.5) return true;
         }
         return false;

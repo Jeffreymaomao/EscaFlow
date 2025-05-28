@@ -45,7 +45,7 @@ window.addEventListener('load', () => {
         escalator.load(grapher.scene, ()=>{
             // after loading the escalator, we can get the box
             const crowd = new Crowd(grapher.renderer, {
-                count: 300,
+                count: 150,
                 maxSpeed: 2.5,
                 position: escalator.position,
             });
@@ -60,13 +60,13 @@ window.addEventListener('load', () => {
             [...escalator.enteringPoint],
             [...escalator.enteringPoint.clone().add(
                 new THREE.Vector3(0, 0, 3)
-            )], {color: '#d1ac4d'}
+            )], {color: '#ffe844'}
         );
         grapher.addLine(
             [...escalator.exitingPoint],
             [...escalator.exitingPoint.clone().add(
                 new THREE.Vector3(0, 0, 3)
-            )], {color: '#d1ac4d'}
+            )], {color: '#ffe844'}
         );
     });
 });
@@ -83,6 +83,9 @@ grapher.animate = function() {
         const crowd = crowds[index];
         const onStairPeopleIndex = onStairPeople[index];
         crowd.update((pos, vel, box, i)=>{
+
+            if (escalator.isPersonFinished(pos)) return;
+
             const porsonHalf     = box.getSize(new THREE.Vector3()).divideScalar(2);
             const alreadyOnStair = onStairPeopleIndex.has(i);
             if (alreadyOnStair) {
@@ -96,13 +99,12 @@ grapher.animate = function() {
 
             const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
             if (onStairPos) {
-                if(!crowd.isPersonAlreadyBumpIntoOther(onStairPos)) {
+                vel.set(0, 0, 0);
+                if(!crowd.isPersonAlreadyBumpIntoOther(onStairPos, i)) {
                     onStairPeopleIndex.add(i);
                     pos.copy(onStairPos);
-                    vel.set(0, 0, 0);
                     return;
                 }
-                vel.set(0, 0, 0);
             }
             const onGroundPos = escalator.getGroundCorrectionPointIfBelow(pos, box, porsonHalf);
             if (onGroundPos && vel.z < 0) {
@@ -114,9 +116,9 @@ grapher.animate = function() {
             const goToStairs = escalator.getGoUpStairForce(pos);
             const wallForce  = escalator.getForceByWall(pos, box);
             const repulsion  = crowd.getRepulsionFromOthers(i, pos);
-            vel.addScaledVector(goToStairs, onStairPos ? 0 : 40.0*dt );
-            vel.addScaledVector(repulsion,  40.0*dt);
-            vel.addScaledVector(wallForce,  80.0*dt);
+            vel.addScaledVector(goToStairs, (onStairPos && !alreadyOnStair) ? 0 : 40.0*dt );
+            vel.addScaledVector(repulsion,  80.0*dt);
+            vel.addScaledVector(wallForce,  100.0*dt);
             vel.addScaledVector(vel,        -10.0*dt);
             if (vel.length() > crowd.maxSpeed) {
                 vel.normalize().multiplyScalar(crowd.maxSpeed);
