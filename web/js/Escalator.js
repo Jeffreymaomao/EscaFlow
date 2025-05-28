@@ -14,21 +14,26 @@ export default class Escalator {
 
         const guessCount = this.url?.split('-').pop().split('.').shift();
         this.count = config.count || parseInt(guessCount) || 15;
-        this.pad = 2;
+        this.pad = 4;
         this.dy =  0.226;
         this.dz =  0.128;
         this.x0 =  0.00 + this.position.x;
         this.y0 =  0.49 + this.position.y;
         this.z0 = -0.22 + this.position.z;
-        this.dt =  0.01;
+        this.currentDeltaY = 0.0;
 
         this.ymax = this.count * this.dy + this.y0;
         this.zmax = this.count * this.dz + this.z0;
 
-        this.enteringPoint  = new THREE.Vector3(
+        this.enteringPoint = new THREE.Vector3(
             this.x0,
-            this.y0 - 3*this.dy,
+            this.y0 - 1*this.dy,
             this.z0
+        );
+        this.exitingPoint = new THREE.Vector3(
+            this.x0,
+            this.ymax + 3*this.dy,
+            this.zmax
         );
         this.groundPosition = new THREE.Vector3(0, 0, -0.24).add(this.position);
     }
@@ -113,6 +118,8 @@ export default class Escalator {
             color: 0x333333,
             roughness: 0.99,
             metalness: 0.1,
+            // disable
+
             side: THREE.DoubleSide
         });
 
@@ -136,6 +143,13 @@ export default class Escalator {
             const y = i*this.dy + this.y0 - this.dy;
             const z = i*this.dz + this.z0 - this.dz;
             const pos = new THREE.Vector3(this.x0, y, z);
+            if (pos.z > this.zmax+this.dz*0.0 || pos.y > this.ymax+this.dy*0.2) {
+                const lowestStairPos = this.stairsPosition[
+                    (i+1)%this.stairsPosition.length
+                ];
+                pos.y = lowestStairPos.y - this.dy;
+                pos.z = lowestStairPos.z - this.dz;
+            }
             this.stairsPosition.push(pos.clone())
             const matrix = new THREE.Matrix4();
             matrix.setPosition(pos);
@@ -160,7 +174,8 @@ export default class Escalator {
     }
 
     getVelocity(pos) {
-        const bufferLength = 0.3;
+        // This will make the buffer change very fast
+        const bufferLength = 0.15; // DO NOT CHANGE THIS
         const distanceToTop = Math.abs(this.zmax - pos.z);
         let dzFactor = 1.0;
         if (distanceToTop < bufferLength) {
@@ -178,9 +193,14 @@ export default class Escalator {
             const vel = this.getVelocity(pos);
             pos.addScaledVector(vel, dt);
 
-            if (pos.z > this.zmax+this.dz*0.1 || pos.y > this.ymax+this.dy*0.1) {
-                pos.y = this.y0 - this.pad*this.dy;
-                pos.z = this.z0 - this.pad*this.dz;
+            this.currentDeltaY = (this.currentDeltaY + this.dy * dt)%this.dy;
+
+            if (pos.z > this.zmax+this.dz*0.1 || pos.y > this.ymax+this.dy*0.2) {
+                const lowestStairPos = this.stairsPosition[
+                    (i+1)%this.stairsPosition.length
+                ];
+                pos.y = lowestStairPos.y - this.dy;
+                pos.z = lowestStairPos.z - this.dz;
             }
             this.stairsPosition[i] = pos;
             matrix.setPosition(pos);
@@ -207,16 +227,36 @@ export default class Escalator {
         }
         const dr2R = personBox.min.x - box.max.x;
         if (dr2R > 0) {
-            const fy = this.sphKernel(dr2R, this.dy);
+            // const fy = this.sphKernel(dr2R, this.dy);
+            const fy = 1.0 / dr2R*dr2R;
             return new THREE.Vector3(fy, 0, 0);
         }
         
         const dr2L = box.min.x - personBox.max.x;
         if (dr2L > 0) {
-            const fy = this.sphKernel(dr2L, this.dy);
+            // const fy = this.sphKernel(dr2L, this.dy);
+            const fy = 1.0 / dr2R*dr2R;
             return new THREE.Vector3(-fy, 0, 0);
         }
+
+        // if (dr2R < 0 && dr2L )
+
+
         return new THREE.Vector3(0, 0, 0);
+    }
+
+    getGoUpStairForce(pos) {
+        const box = this.box;
+        const enter = this.enteringPoint;
+        const exit = this.exitingPoint;
+        if (pos.x < box.max.x &&
+            pos.x > box.min.x &&
+            pos.y > enter.y &&
+            pos.y < exit.y
+        ) { // in side the star
+            return exit.clone().sub(pos);
+        } 
+        return enter.clone().sub(pos);
     }
 
     getStairSurfacePointIfCollision(personPos, personBox, porsonHalf) {
@@ -232,7 +272,6 @@ export default class Escalator {
                 } else if (personBox.max.x > adjustedMaxX) {
                     personPos.x = adjustedMaxX + porsonHalf.x + 1e-5;
                 }
-
                 return new THREE.Vector3(
                     personPos.x,
                     personPos.y,

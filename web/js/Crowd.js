@@ -9,6 +9,7 @@ export default class Crowd {
         this.height   = config.height || 0.6;
         this.color    = config.color || 0x92CC92;
         this.position = config.position || new THREE.Vector3();
+        this.maxSpeed = config.maxSpeed || 1.0;
         this.halfSize = new THREE.Vector3(
             this.width / 2, this.depth / 2, this.height / 2
         );
@@ -98,6 +99,14 @@ export default class Crowd {
         return 0;
     }
 
+    isPersonAlreadyBumpIntoOther(pos) {
+        for (let j = 0; j < this.count; j++) {
+            if (pos.distanceTo(this.positions[j]) < this.minPeopleDistance * 0.5) return true;
+        }
+        return false;
+    }
+
+
     getAnisotropicDistance(dr) {
         return this.widthHeight * Math.sqrt(
             (dr.x / this.depth)**2 + 
@@ -106,7 +115,7 @@ export default class Crowd {
     }
 
     getRepulsionFromOthers(i, pos) {
-        const force = new THREE.Vector3();
+        const force = new THREE.Vector3(0,0,0);
         const dr = new THREE.Vector3();
         const h = this.repulsionSize;
         for (let j = 0; j < this.count; j++) {
@@ -116,14 +125,13 @@ export default class Crowd {
             const r = this.getAnisotropicDistance(dr);
             if (r > 1e-3 && r < h) {
                 force.add(dr.normalize().multiplyScalar(
-                    this.sphKernel(r*r, h)
+                    this.sphKernel(r, h)
                 ));
             }
         }
         force.z = 0.0;
         return force;
     }
-
 
     update(callback=()=>{}) {
         const matrix = new THREE.Matrix4();
@@ -141,7 +149,7 @@ export default class Crowd {
             matrix.identity();
             const vx = vel.x;
             const vy = vel.y;
-            if (vx*vx + vy*vy > 1e-6) {
+            if (vx*vx + vy*vy > 0) {
                 euler.set(0, 0, Half_PI - Math.atan2(vy, vx));
                 quaternion.setFromEuler(euler);
                 matrix.makeRotationFromQuaternion(quaternion);

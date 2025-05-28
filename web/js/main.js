@@ -15,6 +15,7 @@ const grapher = new Grapher({
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
+    isSaveCameraState: false,
     // backgroundImage: 'img/rostock_laage_airport_2k.hdr'
 });
 // ------------------------------------------
@@ -30,8 +31,8 @@ for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const offset = new THREE.Vector3(x*10, y*10 - 2, -0.5);
         const escalator = new Escalator({
-            // url: './model/escalator-15.glb',
-            url: './model/escalator-20.glb',
+            url: './model/escalator-15.glb',
+            // url: './model/escalator-20.glb',
             scale: [0.8, 0.5, 0.5],
             position: offset,
             groundSize: new THREE.Vector2(30,30)
@@ -42,11 +43,11 @@ for (var x = -count; x <= count; x+=1) {
 window.addEventListener('load', () => {
     escalators.forEach((escalator) => {
         escalator.load(grapher.scene, ()=>{
-            console.log(escalator.box.max)
             // after loading the escalator, we can get the box
             const crowd = new Crowd(grapher.renderer, {
-                count: 1000,
-                position: escalator.position
+                count: 300,
+                maxSpeed: 2.5,
+                position: escalator.position,
             });
             crowd.addToScene(grapher.scene);
             crowd.initializePositions(escalator.box, 500);
@@ -55,9 +56,15 @@ window.addEventListener('load', () => {
             onStairPeople.push(new Set());
         });
         // additional line
-        const line = grapher.addLine(
+        grapher.addLine(
             [...escalator.enteringPoint],
             [...escalator.enteringPoint.clone().add(
+                new THREE.Vector3(0, 0, 3)
+            )], {color: '#d1ac4d'}
+        );
+        grapher.addLine(
+            [...escalator.exitingPoint],
+            [...escalator.exitingPoint.clone().add(
                 new THREE.Vector3(0, 0, 3)
             )], {color: '#d1ac4d'}
         );
@@ -66,7 +73,6 @@ window.addEventListener('load', () => {
 // ------------------------------------------
 // start to animate
 const clock = new THREE.Clock();
-const gravity = new THREE.Vector3(0, 0, -9.8);
 grapher.animate = function() {
     const dt = Math.max(clock.getDelta(), 1e-3);
     // const dt = 0.02; // fixed time step for consistency
@@ -87,12 +93,16 @@ grapher.animate = function() {
                 if (onStairPos) pos.copy(onStairPos);
                 return;
             }
+
             const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
             if (onStairPos) {
-                onStairPeopleIndex.add(i);
-                pos.copy(onStairPos);
+                if(!crowd.isPersonAlreadyBumpIntoOther(onStairPos)) {
+                    onStairPeopleIndex.add(i);
+                    pos.copy(onStairPos);
+                    vel.set(0, 0, 0);
+                    return;
+                }
                 vel.set(0, 0, 0);
-                return;
             }
             const onGroundPos = escalator.getGroundCorrectionPointIfBelow(pos, box, porsonHalf);
             if (onGroundPos && vel.z < 0) {
@@ -101,14 +111,17 @@ grapher.animate = function() {
                 vel.z = 0;
                 return;
             }
-            const repulsion = crowd.getRepulsionFromOthers(i, pos);
-            const goToStairs = escalator.enteringPoint.clone().sub(pos);
+            const goToStairs = escalator.getGoUpStairForce(pos);
             const wallForce  = escalator.getForceByWall(pos, box);
-            vel.addScaledVector(goToStairs,  4.0*dt);
-            vel.addScaledVector(repulsion,   20.0*dt);
-            vel.addScaledVector(wallForce,  100.0*dt);
+            const repulsion  = crowd.getRepulsionFromOthers(i, pos);
+            vel.addScaledVector(goToStairs, onStairPos ? 0 : 40.0*dt );
+            vel.addScaledVector(repulsion,  40.0*dt);
+            vel.addScaledVector(wallForce,  80.0*dt);
             vel.addScaledVector(vel,        -10.0*dt);
-            // vel.addScaledVector(gravity, dt);
+            if (vel.length() > crowd.maxSpeed) {
+                vel.normalize().multiplyScalar(crowd.maxSpeed);
+            }
+
             pos.addScaledVector(vel, dt);
         });
     });
