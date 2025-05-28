@@ -18,6 +18,10 @@ export default class Crowd {
         this.minPeopleDistance = Math.max(this.width, this.depth) * 3;
         this.repulsionSize = this.minPeopleDistance * 3;
 
+        this.initializeRandomDistance = Math.max(
+            30 / Math.sqrt(this.count) * this.minPeopleDistance, 10
+        );
+
         this.geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
         this.geometry.rotateX(Math.PI / 2);
         this.material = new THREE.MeshStandardMaterial({
@@ -32,10 +36,16 @@ export default class Crowd {
         this.velocities = new Array(this.count).fill(null);
     }
 
-    initializePositions(avoidBox=null, maxAttempts=200) {
-        const initializeRandomDistance = Math.max(
-            30 / Math.sqrt(this.count) * this.minPeopleDistance, 10
-        );
+    generateRandomPoint(rscale=1.0, offset=new THREE.Vector3(0, 0, 0)) {
+        const theta = Math.random() * 2 * Math.PI;
+        const radii = this.initializeRandomDistance * Math.random() * rscale;
+        const x = this.position.x + offset.x + radii * Math.cos(theta);
+        const y = this.position.y + offset.y + radii * Math.sin(theta);
+        const z = this.position.z + offset.z + this.height * 0.5 - 0.239;
+        return new THREE.Vector3(x, y, z);
+    }
+
+    initializePositions(avoidBox=null, maxAttempts=200, offset=new THREE.Vector3(0, 0, 0)) {
         const matrix = new THREE.Matrix4();
         for (let i = 0; i < this.count; i++) {
             let attempts = 0;
@@ -43,12 +53,7 @@ export default class Crowd {
             let isValid = false;
 
             while (attempts < maxAttempts && !isValid) {
-                const theta = Math.random() * 2 * Math.PI;
-                const radii = Math.random();
-                const xx = initializeRandomDistance * radii * Math.cos(theta);
-                const yy = initializeRandomDistance * radii * Math.sin(theta) - 10;
-                const zz = this.height * 0.5 - 0.239;
-                pos = new THREE.Vector3(xx, yy, zz).add(this.position);
+                pos = this.generateRandomPoint(1.0, offset);
 
                 isValid = true;
                 if (avoidBox && avoidBox.containsPoint(pos)) {

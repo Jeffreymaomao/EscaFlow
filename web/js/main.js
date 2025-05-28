@@ -5,6 +5,7 @@ import Crowd from './Crowd.js';
 // ------------------------------------------
 const {sqrt, sin, cos, pow, PI, acos, floor, ceil} = Math; // for convenience
 const rand = (min=0,max=1)=> {return (max-min)*Math.random()+min}
+const clamp = (x, min=0,max=1)=> {return x < min ? min : (x > max ? max : x)}
 // ------------------------------------------
 // initialize grapher
 const grapher = new Grapher({
@@ -26,7 +27,7 @@ const user = {
 const escalators = [];
 const crowds = [];
 const onStairPeople = [];
-const count = 0;
+const count = 1;
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const offset = new THREE.Vector3(x*10, y*10 - 2, -0.5);
@@ -45,12 +46,12 @@ window.addEventListener('load', () => {
         escalator.load(grapher.scene, ()=>{
             // after loading the escalator, we can get the box
             const crowd = new Crowd(grapher.renderer, {
-                count: 150,
+                count: 400,
                 maxSpeed: 2.5,
                 position: escalator.position,
             });
             crowd.addToScene(grapher.scene);
-            crowd.initializePositions(escalator.box, 500);
+            crowd.initializePositions(escalator.box, 500, new THREE.Vector3(0, -3, 0));
             // add to global arrays
             crowds.push(crowd);
             onStairPeople.push(new Set());
@@ -74,7 +75,7 @@ window.addEventListener('load', () => {
 // start to animate
 const clock = new THREE.Clock();
 grapher.animate = function() {
-    const dt = Math.max(clock.getDelta(), 1e-3);
+    const dt = clamp(clock.getDelta(), 1e-7, 1e-2);
     // const dt = 0.02; // fixed time step for consistency
     if(user.pause) return;
     escalators.forEach((escalator, index) => {
@@ -84,7 +85,13 @@ grapher.animate = function() {
         const onStairPeopleIndex = onStairPeople[index];
         crowd.update((pos, vel, box, i)=>{
 
-            if (escalator.isPersonFinished(pos)) return;
+            if (escalator.isPersonFinished(pos)){
+                // if the person is finished, reset position and velocity
+                pos.copy(crowd.generateRandomPoint());
+                vel.set(0, 0, -9.8);
+                onStairPeopleIndex.delete(i);
+                return;
+            }
 
             const porsonHalf     = box.getSize(new THREE.Vector3()).divideScalar(2);
             const alreadyOnStair = onStairPeopleIndex.has(i);
