@@ -20,6 +20,7 @@ class Grapher {
         this.cameraMinDistance  = config.cameraMinDistance || 1;
         this.cameraMaxDistance  = config.cameraMaxDistance || 10;
         this.initCameraPosition = config.cameraPosition || new THREE.Vector3(1.8, 1.8, 1.8);
+        this.isSaveCameraState    = config.isSaveCameraState || true;
 
         if(config.gui) {
             var guiWidth = 245;
@@ -176,7 +177,10 @@ class Grapher {
             position: {x: camera.position.x, y: camera.position.y, z: camera.position.z,},
             target:   {x: controls.target.x, y: controls.target.y, z: controls.target.z,},
         };
-        state.target.x = 0; state.target.y = 0;
+        if (!isSaveCameraState) {
+            state.target.x = 0; state.target.y = 0;
+            return;
+        }
         window.localStorage.setItem('cameraState', JSON.stringify(state));
     }
 
