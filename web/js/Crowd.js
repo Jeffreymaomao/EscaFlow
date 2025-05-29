@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 
 export default class Crowd {
-    constructor(renderer, config = {}) {
-        this.renderer = renderer;
+    constructor(config = {}) {
         this.count    = config.count || 100;
         this.depth    = config.radius || 0.1;
         this.width    = config.radius || 0.2;
@@ -36,12 +35,12 @@ export default class Crowd {
         this.velocities = new Array(this.count).fill(null);
     }
 
-    generateRandomPoint(rscale=1.0, offset=new THREE.Vector3(0, 0, 0)) {
+    generateRandomPoint(offset=new THREE.Vector3(0, 0, 0)) {
         const theta = Math.random() * 2 * Math.PI;
-        const radii = this.initializeRandomDistance * Math.random() * rscale;
+        const radii = this.initializeRandomDistance * Math.random();
         const x = this.position.x + offset.x + radii * Math.cos(theta);
         const y = this.position.y + offset.y + radii * Math.sin(theta);
-        const z = this.position.z + offset.z + this.height * 0.5 - 0.239;
+        const z = this.position.z + offset.z + this.height * 0.5;
         return new THREE.Vector3(x, y, z);
     }
 
@@ -53,7 +52,7 @@ export default class Crowd {
             let isValid = false;
 
             while (attempts < maxAttempts && !isValid) {
-                pos = this.generateRandomPoint(1.0, offset);
+                pos = this.generateRandomPoint(offset);
 
                 isValid = true;
                 if (avoidBox && avoidBox.containsPoint(pos)) {
@@ -142,8 +141,10 @@ export default class Crowd {
     update(callback=()=>{}) {
         const matrix = new THREE.Matrix4();
         const quaternion = new THREE.Quaternion();
+        const rotationMatrix = new THREE.Matrix4();
         const euler = new THREE.Euler();
         const up = new THREE.Vector3(0, 0, 1);
+        const zero = new THREE.Vector3();
         const Half_PI = Math.PI*0.5
 
         for (let i = 0; i < this.count; i++) {
@@ -152,15 +153,14 @@ export default class Crowd {
             const box = this.getPersonBox(pos);
             callback(pos, vel, box, i);
             
-            matrix.identity();
-            const vx = vel.x;
-            const vy = vel.y;
-            if (vx*vx + vy*vy > 0) {
-                euler.set(0, 0, Half_PI - Math.atan2(vy, vx));
-                quaternion.setFromEuler(euler);
-                matrix.makeRotationFromQuaternion(quaternion);
+            if (vel.lengthSq() > 0) {
+                const dir = vel.clone().setZ(0).normalize();
+                rotationMatrix.lookAt(zero, dir, up);
+                rotationMatrix.multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+                matrix.copy(rotationMatrix);
+            } else {
+                matrix.identity();
             }
-
             matrix.setPosition(pos);
             this.mesh.setMatrixAt(i, matrix);
         }

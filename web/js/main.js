@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import Grapher from "./Grapher.js";
 import Escalator from './Escalator.js';
 import Crowd from './Crowd.js';
+import Protal from './Protal.js';
 // ------------------------------------------
 const {sqrt, sin, cos, pow, PI, acos, floor, ceil} = Math; // for convenience
 const rand = (min=0,max=1)=> {return (max-min)*Math.random()+min}
@@ -16,7 +17,7 @@ const grapher = new Grapher({
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
-    isSaveCameraState: false,
+    isSaveCameraState: true,
     // backgroundImage: 'img/rostock_laage_airport_2k.hdr'
 });
 // ------------------------------------------
@@ -25,14 +26,16 @@ const user = {
 };
 // ------------------------------------------
 const escalators = [];
+const protals = [];
 const crowds = [];
 const onStairPeople = [];
-const count = 1;
+const count = 0;
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const offset = new THREE.Vector3(x*10, y*10 - 2, -0.5);
         const escalator = new Escalator({
-            url: './model/escalator-15.glb',
+            url: './model/escalator-10.glb',
+            // url: './model/escalator-15.glb',
             // url: './model/escalator-20.glb',
             scale: [0.8, 0.5, 0.5],
             position: offset,
@@ -45,16 +48,33 @@ window.addEventListener('load', () => {
     escalators.forEach((escalator) => {
         escalator.load(grapher.scene, ()=>{
             // after loading the escalator, we can get the box
-            const crowd = new Crowd(grapher.renderer, {
-                count: 400,
-                maxSpeed: 2.5,
-                position: escalator.position,
+            const crowd = new Crowd({
+                count: 700,
+                maxSpeed: 4,
+                position: new THREE.Vector3(
+                    escalator.position.x,
+                    escalator.position.y,
+                    escalator.groundPosition.z,
+                )
             });
+            // console.log(crowd.position, escalator.position)
             crowd.addToScene(grapher.scene);
-            crowd.initializePositions(escalator.box, 500, new THREE.Vector3(0, -3, 0));
+            crowd.initializePositions(escalator.box, 500, new THREE.Vector3(0, 0, 0));
             // add to global arrays
             crowds.push(crowd);
             onStairPeople.push(new Set());
+
+            const protal = new Protal({
+                position: new THREE.Vector3(
+                    escalator.x0,
+                    escalator.box.max.y,
+                    escalator.zmax 
+                ),
+                color: 0x881133,
+                size: new THREE.Vector3(0.9, 0.12, 0.8)
+            });
+            protals.push(protal);
+            protal.addToScene(grapher.scene);
         });
         // additional line
         grapher.addLine(
@@ -73,6 +93,8 @@ window.addEventListener('load', () => {
 });
 // ------------------------------------------
 // start to animate
+const exitProtals = [];
+window.exitProtals = exitProtals;
 const clock = new THREE.Clock();
 grapher.animate = function() {
     const dt = clamp(clock.getDelta(), 1e-7, 1e-2);
@@ -82,14 +104,36 @@ grapher.animate = function() {
         escalator.update(dt);
         // === updata human ===
         const crowd = crowds[index];
+        const protal = protals[index];
         const onStairPeopleIndex = onStairPeople[index];
         crowd.update((pos, vel, box, i)=>{
-
+            protal.updateColor(dt);
+            exitProtals.forEach((p)=>{
+                p.decreaseHeight(dt);
+            });
+            for (let j = exitProtals.length - 1; j>= 0; j--) {
+                if(!exitProtals[j].alreadyClear) continue; 
+                exitProtals.splice(j, 1);
+            }
             if (escalator.isPersonFinished(pos)){
                 // if the person is finished, reset position and velocity
                 pos.copy(crowd.generateRandomPoint());
                 vel.set(0, 0, -9.8);
                 onStairPeopleIndex.delete(i);
+                protal.setColor(0x0088ff);
+                setTimeout(()=>{protal.setColor(0x881133)}, 200);
+
+                const exitProtalPos = pos.clone().sub(new THREE.Vector3(0,0,crowd.height*0.5));
+                const exitProtalDir = escalator.enteringPoint.clone().sub(pos);
+                exitProtalDir.setZ(0.0);
+                const exitProtal = new Protal({
+                    position: exitProtalPos,
+                    color: 0x0088ff,
+                    size: new THREE.Vector3(0.4, 0.1, 0.8),
+                    direction: exitProtalDir
+                });
+                exitProtal.addToScene(grapher.scene);
+                exitProtals.push(exitProtal);
                 return;
             }
 
