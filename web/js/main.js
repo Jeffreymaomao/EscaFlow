@@ -8,12 +8,16 @@ const {sqrt, sin, cos, pow, PI, acos, floor, ceil} = Math; // for convenience
 const rand = (min=0,max=1)=> {return (max-min)*Math.random()+min}
 const clamp = (x, min=0,max=1)=> {return x < min ? min : (x > max ? max : x)}
 // ------------------------------------------
+const user = {
+    pause: true
+};
+// ------------------------------------------
 // initialize grapher
 const grapher = new Grapher({
-    cameraPosition: new THREE.Vector3(2,2,2),
     cameraMinDistance: 1,
     cameraMaxDistance: 1000,
     axisLength: 1.0,
+    showAxis: false,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
@@ -21,18 +25,19 @@ const grapher = new Grapher({
     // backgroundImage: 'img/rostock_laage_airport_2k.hdr'
 });
 // ------------------------------------------
-const user = {
-    pause: true
-};
-// ------------------------------------------
 const escalators = [];
 const protals = [];
 const crowds = [];
 const onStairPeople = [];
-const count = 0;
+const count = 2;
+const offsetFromIndex = function(ix, iy){
+    return new THREE.Vector3(
+        ix * 20, iy * 20 - 2, -0.5
+    );
+}
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
-        const offset = new THREE.Vector3(x*10, y*10 - 2, -0.5);
+        const offset = offsetFromIndex(x, y);
         const escalator = new Escalator({
             url: './model/escalator-10.glb',
             // url: './model/escalator-15.glb',
@@ -49,7 +54,7 @@ window.addEventListener('load', () => {
         escalator.load(grapher.scene, ()=>{
             // after loading the escalator, we can get the box
             const crowd = new Crowd({
-                count: 700,
+                count: 20,
                 maxSpeed: 4,
                 position: new THREE.Vector3(
                     escalator.position.x,
@@ -93,13 +98,11 @@ window.addEventListener('load', () => {
 });
 // ------------------------------------------
 // start to animate
-const exitProtals = [];
-window.exitProtals = exitProtals;
 const clock = new THREE.Clock();
-grapher.animate = function() {
+grapher.animate = function(ignorePause) {
     const dt = clamp(clock.getDelta(), 1e-7, 1e-2);
     // const dt = 0.02; // fixed time step for consistency
-    if(user.pause) return;
+    if(!ignorePause && user.pause) return;
     escalators.forEach((escalator, index) => {
         escalator.update(dt);
         // === updata human ===
@@ -108,13 +111,6 @@ grapher.animate = function() {
         const onStairPeopleIndex = onStairPeople[index];
         crowd.update((pos, vel, box, i)=>{
             protal.updateColor(dt);
-            exitProtals.forEach((p)=>{
-                p.decreaseHeight(dt);
-            });
-            for (let j = exitProtals.length - 1; j>= 0; j--) {
-                if(!exitProtals[j].alreadyClear) continue; 
-                exitProtals.splice(j, 1);
-            }
             if (escalator.isPersonFinished(pos)){
                 // if the person is finished, reset position and velocity
                 pos.copy(crowd.generateRandomPoint());
@@ -122,18 +118,6 @@ grapher.animate = function() {
                 onStairPeopleIndex.delete(i);
                 protal.setColor(0x0088ff);
                 setTimeout(()=>{protal.setColor(0x881133)}, 200);
-
-                const exitProtalPos = pos.clone().sub(new THREE.Vector3(0,0,crowd.height*0.5));
-                const exitProtalDir = escalator.enteringPoint.clone().sub(pos);
-                exitProtalDir.setZ(0.0);
-                const exitProtal = new Protal({
-                    position: exitProtalPos,
-                    color: 0x0088ff,
-                    size: new THREE.Vector3(0.4, 0.1, 0.8),
-                    direction: exitProtalDir
-                });
-                exitProtal.addToScene(grapher.scene);
-                exitProtals.push(exitProtal);
                 return;
             }
 
@@ -180,11 +164,37 @@ grapher.animate = function() {
     });
 };
 // ------------------------------------------
+let currentIndex = { x: 0, y: 0 };
 window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {
         user.pause = !user.pause;
-    } else if (e.key === 'r') {
+        return;
+    } if (e.shiftKey && e.key === 'R') {
+        currentIndex = { x: 0, y: 0 };
+        grapher.camera.position.set(2, -4, 2);
+        grapher.controls.target.set(0, 0, 0);
+        grapher.controls.update();
+        return;
     } else if (e.key === 'ArrowRight') {
         if(!user.pause) return;
+        grapher.animate(true);
+        return;
     }
+
+    if (!['w', 's', 'a', 'd'].includes(e.key)) return;
+    const currentEscaOffset     = offsetFromIndex(currentIndex.x, currentIndex.y);
+    const controlsTargetOffset  = grapher.controls.target.clone().sub(currentEscaOffset);
+    const cameraPositionOffset  = grapher.camera.position.clone().sub(currentEscaOffset);
+    switch (e.key) {
+        case 'w': currentIndex.y++; break;
+        case 's': currentIndex.y--; break;
+        case 'a': currentIndex.x--; break;
+        case 'd': currentIndex.x++; break;
+    }
+    currentIndex.x = clamp(currentIndex.x, -count, count);
+    currentIndex.y = clamp(currentIndex.y, -count, count);
+    const targetEscaOffset      = offsetFromIndex(currentIndex.x, currentIndex.y);
+    grapher.camera.position.copy(targetEscaOffset.clone().add(cameraPositionOffset));
+    grapher.controls.target.copy(targetEscaOffset.clone().add(controlsTargetOffset));
+    grapher.controls.update();
 });

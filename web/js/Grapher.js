@@ -7,6 +7,7 @@ class Grapher {
     constructor(config={
         stats: false,
         gui:false,
+        showAxis: true,
         cameraMinDistance: 1,
         cameraMaxDistance: 10,
         backgroundColor: 0xffffff,
@@ -16,6 +17,7 @@ class Grapher {
         this.axisLength = config.axisLength || 1;
         this.axisLabels = [undefined, undefined, undefined];
         this.backgroundColor = config.backgroundColor;
+        this.showAxis = config.showAxis !== undefined ? config.showAxis : true;
 
         this.cameraMinDistance  = config.cameraMinDistance || 1;
         this.cameraMaxDistance  = config.cameraMaxDistance || 10;
@@ -68,15 +70,13 @@ class Grapher {
 
     init() {
         this.initLight();
-        this.initCamera();
-        this.initAxis();
+        this.initCamera(this.initCameraPosition);
+        if (this.showAxis) this.initAxis();
         this.initControls();
         this.initAnimation();
 
         this.loadCameraState(this.camera, this.controls);
-        window.addEventListener('beforeunload', function(){
-            this.saveCameraState(this.camera, this.controls);
-        }.bind(this));
+        window.addEventListener('beforeunload', this.saveCameraState.bind(this));
     }
 
     initRenderer() {
@@ -101,11 +101,11 @@ class Grapher {
         document.body.appendChild(this.renderer.domElement);
     }
 
-    initCamera() {
+    initCamera(position, target=new THREE.Vector3(0, 0, 0)) {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        this.camera.position.set(this.initCameraPosition.x, this.initCameraPosition.y, this.initCameraPosition.z);
+        this.camera.position.set(position.x, position.y, position.z);
         this.camera.up.set(0, 0, 1);
-        this.camera.lookAt(0, 0, 0);
+        this.camera.lookAt(target.x, target.y, target.z);
     }
 
     initLight() {
@@ -172,10 +172,10 @@ class Grapher {
         return label;
     }
 
-    saveCameraState (camera, controls) {
+    saveCameraState() {
         const state = {
-            position: {x: camera.position.x, y: camera.position.y, z: camera.position.z,},
-            target:   {x: controls.target.x, y: controls.target.y, z: controls.target.z,},
+            position: {x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z,},
+            target:   {x: this.controls.target.x, y: this.controls.target.y, z: this.controls.target.z,},
         };
         if (!this.isSaveCameraState) {
             state.target.x = 0; state.target.y = 0;
@@ -202,7 +202,7 @@ class Grapher {
             this.animate();
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
-            this.labelRenderer.render(this.scene, this.camera);
+            if (this.showAxis) this.labelRenderer.render(this.scene, this.camera);
             this.stats && this.stats.update();
         }
         animate();
