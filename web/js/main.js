@@ -55,7 +55,7 @@ window.addEventListener('load', () => {
         escalator.load(grapher.scene, ()=>{
             // after loading the escalator, we can get the box
             const crowd = new Crowd({
-                count: 20,
+                count: 200,
                 maxSpeed: 4,
                 position: new THREE.Vector3(
                     escalator.position.x,
