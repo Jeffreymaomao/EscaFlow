@@ -8,22 +8,23 @@ const {sqrt, sin, cos, pow, PI, acos, floor, ceil} = Math; // for convenience
 const rand = (min=0,max=1)=> {return (max-min)*Math.random()+min}
 const clamp = (x, min=0,max=1)=> {return x < min ? min : (x > max ? max : x)}
 // ------------------------------------------
-const user = {
-    pause: true
-};
-// ------------------------------------------
 // initialize grapher
 const grapher = new Grapher({
     cameraMinDistance: 1,
     cameraMaxDistance: 1000,
     axisLength: 1.0,
-    showAxis: false,
+    isShowAxis: false,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
     isSaveCameraState: true,
-    // backgroundImage: 'img/rostock_laage_airport_2k.hdr'
 });
+// ------------------------------------------
+const user = {
+    pause: true,
+    axis: grapher.toogleAxis.bind(grapher),
+};
+window.user = user;
 // ------------------------------------------
 const escalators = [];
 const protals = [];

@@ -7,7 +7,7 @@ class Grapher {
     constructor(config={
         stats: false,
         gui:false,
-        showAxis: true,
+        isShowAxis: true,
         cameraMinDistance: 1,
         cameraMaxDistance: 10,
         backgroundColor: 0xffffff,
@@ -17,7 +17,7 @@ class Grapher {
         this.axisLength = config.axisLength || 1;
         this.axisLabels = [undefined, undefined, undefined];
         this.backgroundColor = config.backgroundColor;
-        this.showAxis = config.showAxis !== undefined ? config.showAxis : true;
+        this.isShowAxis = config.isShowAxis !== undefined ? config.isShowAxis : true;
 
         this.cameraMinDistance  = config.cameraMinDistance || 1;
         this.cameraMaxDistance  = config.cameraMaxDistance || 10;
@@ -71,7 +71,7 @@ class Grapher {
     init() {
         this.initLight();
         this.initCamera(this.initCameraPosition);
-        if (this.showAxis) this.initAxis();
+        this.initAxis();
         this.initControls();
         this.initAnimation();
 
@@ -134,6 +134,29 @@ class Grapher {
         document.body.appendChild(this.labelRenderer.domElement);
     }
 
+    toogleAxis() {
+        this.isShowAxis = !this.isShowAxis;
+        if (this.isShowAxis) {
+            this.showAxis();
+        } else {
+            this.hideAxis();
+        }
+    }
+
+    showAxis() {
+        this.axesHelper.visible = true;
+        this.axisLabels.forEach(label => {
+            label.visible = true;
+        });
+    }
+
+    hideAxis() {
+        this.axesHelper.visible = false;
+        this.axisLabels.forEach(label => {
+            label.visible = false;
+        });
+    }
+
     initControls() {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.dampingFactor = 0.05;
@@ -145,10 +168,12 @@ class Grapher {
     initAxis() {
         this.axesHelper = new THREE.AxesHelper(this.axisLength);
         this.scene.add(this.axesHelper);
-        this.initLabel();
         this.axisLabels[0] = this.createLabel("x", new THREE.Vector3(this.axisLength, 0.0, 0.0), {class:'axis'});
         this.axisLabels[1] = this.createLabel("y", new THREE.Vector3(0.0, this.axisLength, 0.0), {class:'axis'});
         this.axisLabels[2] = this.createLabel("z", new THREE.Vector3(0.0, 0.0, this.axisLength), {class:'axis'});
+        this.initLabel();
+        if (!this.isShowAxis) this.hideAxis();
+        console.log(this.isShowAxis)
     }
 
     createLabel(text, position, config={}) {
@@ -202,7 +227,7 @@ class Grapher {
             this.animate();
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
-            if (this.showAxis) this.labelRenderer.render(this.scene, this.camera);
+            this.labelRenderer.render(this.scene, this.camera);
             this.stats && this.stats.update();
         }
         animate();
