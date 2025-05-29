@@ -166,9 +166,9 @@ export default class Escalator {
         scene.add(startStairMesh);
 
         // --- end stair
-        const endStairGeometry = new THREE.BoxGeometry(width, 0.55, 0.08);
+        const endStairGeometry = new THREE.BoxGeometry(width, 0.75, 0.08);
         const endStairMesh = new THREE.Mesh(endStairGeometry, stairMaterial);
-        endStairMesh.position.set(0, this.size.y - 0.71, this.size.z - 0.8202);
+        endStairMesh.position.set(0, this.size.y - 0.62, this.size.z - 0.8202);
         endStairMesh.position.add(this.position);
         scene.add(endStairMesh);
     }
