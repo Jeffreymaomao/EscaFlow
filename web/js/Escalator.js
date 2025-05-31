@@ -1,8 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {hash} from './utility.js';
 
 export default class Escalator {
-    constructor(config={ url: null, position:new THREE.Vector3(), scale:null }) {
+    constructor(config={
+        url: null,
+        position:new THREE.Vector3(),
+        scale:null
+    }) {
+        this.id = config.id || hash(Math.random(), 3);
         this.url = config.url;
         this.position = config.position;
         this.scale = config.scale || [1.0, 1.0, 1.0];
@@ -220,7 +226,7 @@ export default class Escalator {
         return 0;
     }
 
-    getForceByWall(personPos, personBox) {
+    getForceByWall(personPos, personBox, personVel) {
         const box = this.box;
         if (personBox.max.y < this.y0 - 3*this.dy) {
             return new THREE.Vector3(0, 0, 0);
@@ -253,16 +259,20 @@ export default class Escalator {
             return new THREE.Vector3(fx, 0, 0);
         }
 
-        if (dr2R < 0.0 &&
-            dr2L < 0.0 &&
+        // if the person is in the escalator, but not at the end
+        if (dr2R < 0.0 && // personBox.min.x < box.max.x;
+            dr2L < 0.0 && // box.min.x < personBox.max.x;
             personBox.max.y > this.enteringPoint.y
         ) {
-            if (personPos.x>0) {
-                const fxR = 1/(Math.pow(dr2R/0.2, 6)+1);
+            // personVel.multiplyScalar(0.0001);
+            personVel.x = 0.0;
+            const dist2LR = this.size.x * 0.85 * 0.4;
+            if (personPos.x>this.x0) {
+                const fxR = 1/(Math.pow(dr2R/dist2LR, 6)+1);
                 return new THREE.Vector3(-fxR, 0, 0);
             }
-            if (personPos.y>0) {
-                const fxL = 1/(Math.pow(dr2L/0.2, 6)+1);
+            if (personPos.x<this.x0) {
+                const fxL = 1/(Math.pow(dr2L/dist2LR, 6)+1);
                 return new THREE.Vector3(fxL, 0, 0);
             }
         }
