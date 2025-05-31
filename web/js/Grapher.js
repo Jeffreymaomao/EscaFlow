@@ -173,7 +173,6 @@ class Grapher {
         this.axisLabels[2] = this.createLabel("z", new THREE.Vector3(0.0, 0.0, this.axisLength), {class:'axis'});
         this.initLabel();
         if (!this.isShowAxis) this.hideAxis();
-        console.log(this.isShowAxis)
     }
 
     createLabel(text, position, config={}) {
