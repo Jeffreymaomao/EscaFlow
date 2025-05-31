@@ -113,9 +113,13 @@ export default class Crowd {
 
 
     getAnisotropicDistance(dr) {
+        // return this.widthHeight * Math.sqrt(
+        //     (dr.x / this.depth)**2 + 
+        //     (dr.y / this.width)**2 + dr.z**2
+        // );
         return this.widthHeight * Math.sqrt(
-            (dr.x / this.depth)**2 + 
-            (dr.y / this.width)**2 + dr.z**2
+            (dr.x / this.width)**2 + 
+            (dr.y / this.depth)**2 + dr.z**2
         );
     }
 
@@ -126,8 +130,8 @@ export default class Crowd {
         for (let j = 0; j < this.count; j++) {
             if (i === j) continue;
             dr.copy(pos).sub(this.positions[j]);
-            // const r = dr.length();
-            const r = this.getAnisotropicDistance(dr);
+            const r = dr.length();
+            // const r = this.getAnisotropicDistance(dr);
             if (r > 1e-3 && r < h) {
                 force.add(dr.normalize().multiplyScalar(
                     this.sphKernel(r, h)
