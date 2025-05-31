@@ -130,6 +130,14 @@ grapher.animate = function(ignorePause) {
             if (alreadyOnStair) {
                 const posAtFeet = pos.clone().setZ(pos.z - porsonHalf.z - escalator.halfSize.z);
                 const vel = escalator.getVelocity(posAtFeet);
+                const backwardRepulsionX = repulsion.x < 0.0 ? repulsion.x : 0.0;
+                // the person is on the left
+                if (pos.x < escalator.x0) {
+                    if (i % 10 !== 0 && !backwardRepulsionX) {
+                        pos.y += 1.0 * dt;
+                    }
+                }
+
                 pos.addScaledVector(vel, dt);
                 const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
                 if (onStairPos) pos.copy(onStairPos);
