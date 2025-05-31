@@ -3,6 +3,7 @@ import Grapher from "./Grapher.js";
 import Escalator from './Escalator.js';
 import Crowd from './Crowd.js';
 import Protal from './Protal.js';
+
 // ------------------------------------------
 const {sqrt, sin, cos, pow, PI, acos, floor, ceil} = Math; // for convenience
 const rand = (min=0,max=1)=> {return (max-min)*Math.random()+min}
@@ -13,7 +14,7 @@ const grapher = new Grapher({
     cameraMinDistance: 1,
     cameraMaxDistance: 1000,
     axisLength: 1.0,
-    isShowAxis: false,
+    isShowAxis: true,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
@@ -23,6 +24,7 @@ const grapher = new Grapher({
 const user = {
     pause: true,
     axis: grapher.toogleAxis.bind(grapher),
+    // target: 
 };
 window.user = user;
 // ------------------------------------------
@@ -30,20 +32,20 @@ const escalators = [];
 const protals = [];
 const crowds = [];
 const onStairPeople = [];
-const count = 2;
+const count = 1;
 const offsetFromIndex = function(ix, iy){
     return new THREE.Vector3(
         ix * 20, iy * 20 - 2, -0.5
     );
 }
+const escaNum = 30; // 10, 15, 20, 25, 30
 for (var x = -count; x <= count; x+=1) {
     for (var y = -count; y <= count; y+=1) {
         const offset = offsetFromIndex(x, y);
         const escalator = new Escalator({
-            url: './model/escalator-10.glb',
-            // url: './model/escalator-15.glb',
-            // url: './model/escalator-20.glb',
+            url: `./model/escalator-${escaNum}.glb`,
             scale: [0.8, 0.5, 0.5],
+            id: `Esca${escaNum}-(${x},${y})`,
             position: offset,
             groundSize: new THREE.Vector2(30,30)
         });
@@ -121,7 +123,8 @@ grapher.animate = function(ignorePause) {
                 setTimeout(()=>{protal.setColor(0x881133)}, 200);
                 return;
             }
-
+            // O(n^2) complexity, but the number of people is small
+            const repulsion      = crowd.getRepulsionFromOthers(i, pos);
             const porsonHalf     = box.getSize(new THREE.Vector3()).divideScalar(2);
             const alreadyOnStair = onStairPeopleIndex.has(i);
             if (alreadyOnStair) {
@@ -150,11 +153,10 @@ grapher.animate = function(ignorePause) {
                 return;
             }
             const goToStairs = escalator.getGoUpStairForce(pos);
-            const wallForce  = escalator.getForceByWall(pos, box);
-            const repulsion  = crowd.getRepulsionFromOthers(i, pos);
+            const wallForce  = escalator.getForceByWall(pos, box, vel);
             vel.addScaledVector(goToStairs, (onStairPos && !alreadyOnStair) ? 0 : 40.0*dt );
-            vel.addScaledVector(repulsion,  80.0*dt);
-            vel.addScaledVector(wallForce,  100.0*dt);
+            vel.addScaledVector(repulsion,  120.0*dt);
+            vel.addScaledVector(wallForce,  1000.0*dt);
             vel.addScaledVector(vel,        -10.0*dt);
             if (vel.length() > crowd.maxSpeed) {
                 vel.normalize().multiplyScalar(crowd.maxSpeed);
