@@ -10,7 +10,7 @@ export default class Portal {
         this.direction = config.direction || new THREE.Vector3(0, 1, 0);
 
         this.colorLerpSpeed = 0.1;
-        this.color = new THREE.Color(config.color || 0x00ffff);
+        this.color = new THREE.Color(config.color || 0x777777);
         this.targetColor = this.color.clone();   
         this.geometry = new THREE.BoxGeometry(this.width, this.depth, this.height);
         this.material = new THREE.MeshStandardMaterial({ color: this.color });

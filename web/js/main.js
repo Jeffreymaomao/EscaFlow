@@ -11,7 +11,7 @@ const grapher = new Grapher({
     cameraMinDistance: 1,
     cameraMaxDistance: 1000,
     axisLength: 1.0,
-    isShowAxis: true,
+    isShowAxis: false,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
     backgroundColor: 0xfffbf7,
@@ -21,9 +21,14 @@ const grapher = new Grapher({
 const simulation = new Simulation(grapher, {
     escalatorPad: 1,
     stairsNum: 30,
-    peopleNum: 200,
-    maxSpeed: 4,
-    spacing: 20
+    peopleNum: 300,
+    spacing: 20,
+    isShowTargetLine: false,
+    targetLineColor: 0xffd000,
+    portalOriginalColor: 0x881133,
+    portalEnteringColor: 0x0088ff,
+    crowdColor: 0x82cc92,
+    crowdMaxSpeed: 4,
 });
 
 window.addEventListener('load', async () => {

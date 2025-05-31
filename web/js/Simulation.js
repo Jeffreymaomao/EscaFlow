@@ -15,8 +15,13 @@ export default class Simulation {
             escalatorPad: config.escalatorPad || 1,
             stairsNum: config.stairsNum || 30,
             peopleNum: config.peopleNum || 200,
-            maxSpeed: config.maxSpeed || 4,
             spacing: config.spacing || 20,
+            isShowTargetLine: config.isShowTargetLine || true,
+            targetLineColor: config.targetLineColor || 0xffe844,
+            portalOriginalColor: config.portalOriginalColor || 0x881133,
+            portalEnteringColor: config.portalEnteringColor || 0x0088ff,
+            crowdMaxSpeed: config.crowdMaxSpeed || 4,
+            crowdColor: 0x92CC92,
             ...config
         };
         this.isPaused = true;
@@ -24,6 +29,7 @@ export default class Simulation {
         this.protals = [];
         this.crowds = [];
         this.onStairPeople = [];
+        this.targetLine = [];
 
         this.currentIndex = { x: 0, y: 0 };
     }
@@ -76,7 +82,8 @@ export default class Simulation {
     createCrowdForEscalator(escalator) {
         const crowd = new Crowd({
             count: this.config.peopleNum,
-            maxSpeed: 4,
+            maxSpeed: this.config.crowdMaxSpeed,
+            color: this.config.crowdColor,
             position: new THREE.Vector3(
                 escalator.position.x,
                 escalator.position.y,
@@ -98,7 +105,7 @@ export default class Simulation {
                 escalator.box.max.y,
                 escalator.zmax 
             ),
-            color: 0x881133,
+            color: this.config.portalOriginalColor,
             size: new THREE.Vector3(0.9, 0.12, 0.8)
         });
         this.protals.push(protal);
@@ -106,18 +113,46 @@ export default class Simulation {
     }
 
     addTargetLine(escalator) {
-        this.grapher.addLine(
+        const l1 = this.grapher.addLine(
             [...escalator.enteringPoint],
             [...escalator.enteringPoint.clone().add(
                 new THREE.Vector3(0, 0, 3)
-            )], {color: '#ffe844'}
+            )], {color: this.config.targetLineColor}
         );
-        this.grapher.addLine(
+        const l2 = this.grapher.addLine(
             [...escalator.exitingPoint],
             [...escalator.exitingPoint.clone().add(
                 new THREE.Vector3(0, 0, 3)
-            )], {color: '#ffe844'}
+            )], {color: this.config.targetLineColor}
         );
+        this.targetLine = [l1, l2];
+
+        if (this.config.isShowTargetLine) {
+            this.showTargetLine();
+        } else {
+            this.hideTargetLine();
+        }
+    }
+
+    toogleTargetLine() {
+        this.targetLine.forEach(line => {
+            line.visible = !line.visible;
+        });
+        this.config.isShowTargetLine = !this.config.isShowTargetLine;
+    }
+
+    showTargetLine() {
+        this.targetLine.forEach(line => {
+            line.visible = true;
+        });
+        this.config.isShowTargetLine = true;
+    }
+
+    hideTargetLine() {
+        this.targetLine.forEach(line => {
+            line.visible = false;
+        });
+        this.config.isShowTargetLine = false;
     }
 
     setupAnimation() {
@@ -175,8 +210,8 @@ export default class Simulation {
 
     // For some visual effects
     changePortalColorForEntering(protal) {
-        protal.setColor(0x0088ff);
-        setTimeout(()=>{protal.setColor(0x881133)}, 200);
+        protal.setColor(this.config.portalEnteringColor);
+        setTimeout(()=>{protal.setColor(this.config.portalOriginalColor)}, 200);
     }
 
     // main simulation logic
@@ -184,7 +219,6 @@ export default class Simulation {
     resetPersonForFinishing(personIndex, pos, vel, crowd, onStairPeopleIndex) {
         // if the person is finished, reset position and velocity
         pos.copy(crowd.generateRandomPoint());
-        vel.set(0, 0, -9.8);
         onStairPeopleIndex.delete(personIndex);
     }
 
