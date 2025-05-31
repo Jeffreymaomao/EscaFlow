@@ -172,69 +172,91 @@ export default class Simulation {
         });
     }
 
+
+    // For some visual effects
+    changePortalColorForEntering(protal) {
+        protal.setColor(0x0088ff);
+        setTimeout(()=>{protal.setColor(0x881133)}, 200);
+    }
+
+    // main simulation logic
+
+    resetPersonForFinishing(personIndex, pos, vel, crowd, onStairPeopleIndex) {
+        // if the person is finished, reset position and velocity
+        pos.copy(crowd.generateRandomPoint());
+        vel.set(0, 0, -9.8);
+        onStairPeopleIndex.delete(personIndex);
+    }
+
+    updatePersonOnStair(pos, vel, box, porsonHalf, escalator, repulsion, dt, personIndex) {
+        const posAtFeet = pos.clone().setZ(pos.z - porsonHalf.z - escalator.halfSize.z);
+        const escalatorVel = escalator.getVelocity(posAtFeet);
+        const backwardRepulsionX = repulsion.x < 0.0 ? repulsion.x : 0.0;
+        // the person is on the left
+        if (pos.x < escalator.x0) {
+            if (personIndex % 10 !== 0 && !backwardRepulsionX) {
+                pos.y += 1.0 * dt;
+            }
+        }
+
+        pos.addScaledVector(escalatorVel, dt);
+        const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
+        if (onStairPos) pos.copy(onStairPos);
+    }
+
+    updatePersonNotOnStair(pos, vel, escalator, crowd, box, porsonHalf,
+                          onStairPeopleIndex, repulsion, dt, personIndex) {
+        const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
+        if (onStairPos) {
+            vel.set(0, 0, 0);
+            if(!crowd.isPersonAlreadyBumpIntoOther(onStairPos, personIndex)) {
+                onStairPeopleIndex.add(personIndex);
+                pos.copy(onStairPos);
+                return;
+            }
+        }
+        const onGroundPos = escalator.getGroundCorrectionPointIfBelow(pos, box, porsonHalf);
+        if (onGroundPos && vel.z < 0) {
+            onStairPeopleIndex.delete(personIndex);
+            pos.copy(onGroundPos);
+            vel.z = 0;
+            return;
+        }
+        const goToStairs = escalator.getGoUpStairForce(pos);
+        const wallForce  = escalator.getForceByWall(pos, box, vel);
+        vel.addScaledVector(goToStairs, onStairPos ? 0 : 40.0*dt );
+        vel.addScaledVector(repulsion,  120.0*dt);
+        vel.addScaledVector(wallForce,  1000.0*dt);
+        vel.addScaledVector(vel,        -10.0*dt);
+        if (vel.length() > crowd.maxSpeed) {
+            vel.normalize().multiplyScalar(crowd.maxSpeed);
+        }
+
+        pos.addScaledVector(vel, dt);
+    }
+
     updateCrowdForEscalator(escalator, index, dt) {
         const crowd = this.crowds[index];
         const protal = this.protals[index];
         const onStairPeopleIndex = this.onStairPeople[index];
-        crowd.update((pos, vel, box, i)=>{
+        crowd.update((pos, vel, box, personIndex)=>{
             protal.updateColor(dt);
             if (escalator.isPersonFinished(pos)){
-                // if the person is finished, reset position and velocity
-                pos.copy(crowd.generateRandomPoint());
-                vel.set(0, 0, -9.8);
-                onStairPeopleIndex.delete(i);
-                protal.setColor(0x0088ff);
-                setTimeout(()=>{protal.setColor(0x881133)}, 200);
+                this.resetPersonForFinishing(personIndex, pos, vel, crowd, onStairPeopleIndex);
+                this.changePortalColorForEntering(protal);
                 return;
             }
-            // O(n^2) complexity, but the number of people is small
-            const repulsion      = crowd.getRepulsionFromOthers(i, pos);
+            const repulsion      = crowd.getRepulsionFromOthers(personIndex, pos);
             const porsonHalf     = box.getSize(new THREE.Vector3()).divideScalar(2);
-            const alreadyOnStair = onStairPeopleIndex.has(i);
+            const alreadyOnStair = onStairPeopleIndex.has(personIndex);
             if (alreadyOnStair) {
-                const posAtFeet = pos.clone().setZ(pos.z - porsonHalf.z - escalator.halfSize.z);
-                const vel = escalator.getVelocity(posAtFeet);
-                const backwardRepulsionX = repulsion.x < 0.0 ? repulsion.x : 0.0;
-                // the person is on the left
-                if (pos.x < escalator.x0) {
-                    if (i % 10 !== 0 && !backwardRepulsionX) {
-                        pos.y += 1.0 * dt;
-                    }
-                }
-
-                pos.addScaledVector(vel, dt);
-                const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
-                if (onStairPos) pos.copy(onStairPos);
+                this.updatePersonOnStair(pos, vel, box, porsonHalf, escalator, repulsion, dt, personIndex);
                 return;
             }
-
-            const onStairPos = escalator.getStairSurfacePointIfCollision(pos, box, porsonHalf);
-            if (onStairPos) {
-                vel.set(0, 0, 0);
-                if(!crowd.isPersonAlreadyBumpIntoOther(onStairPos, i)) {
-                    onStairPeopleIndex.add(i);
-                    pos.copy(onStairPos);
-                    return;
-                }
-            }
-            const onGroundPos = escalator.getGroundCorrectionPointIfBelow(pos, box, porsonHalf);
-            if (onGroundPos && vel.z < 0) {
-                onStairPeopleIndex.delete(i);
-                pos.copy(onGroundPos);
-                vel.z = 0;
-                return;
-            }
-            const goToStairs = escalator.getGoUpStairForce(pos);
-            const wallForce  = escalator.getForceByWall(pos, box, vel);
-            vel.addScaledVector(goToStairs, (onStairPos && !alreadyOnStair) ? 0 : 40.0*dt );
-            vel.addScaledVector(repulsion,  120.0*dt);
-            vel.addScaledVector(wallForce,  1000.0*dt);
-            vel.addScaledVector(vel,        -10.0*dt);
-            if (vel.length() > crowd.maxSpeed) {
-                vel.normalize().multiplyScalar(crowd.maxSpeed);
-            }
-
-            pos.addScaledVector(vel, dt);
+            this.updatePersonNotOnStair(
+                pos, vel, escalator, crowd, box, porsonHalf,
+                onStairPeopleIndex, repulsion, dt, personIndex
+            ); 
         });
     }
 }
