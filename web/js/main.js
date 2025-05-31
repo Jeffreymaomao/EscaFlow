@@ -40,6 +40,8 @@ const simulation = new Simulation(grapher, {
     isPauseCallback: ()=>{
         record.stop();
     },
+    updateCallback: (dt)=>{
+    }
 });
 
 const folder = {

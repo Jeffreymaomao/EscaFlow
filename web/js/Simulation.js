@@ -9,6 +9,7 @@ import {rand, clamp, hex2css} from './utility.js';
 export default class Simulation {
     constructor(grapher, config = {}) {
         this.grapher = grapher;
+        this.time  = 0.0;
         this.clock = new THREE.Clock();
 
         this.config = {
@@ -26,6 +27,7 @@ export default class Simulation {
             groundColor: 0x333333,
             isStartCallback: config.isStartCallback || (()=>{}),
             isPauseCallback: config.isPauseCallback || (()=>{}),
+            updateCallback: config.updateCallback || (()=>{}),
             ...config
         };
         this.isPaused = true;
@@ -229,7 +231,8 @@ export default class Simulation {
         const dt = clamp(this.clock.getDelta(), 1e-7, 1e-2);
         
         if (!ignorePause && this.isPaused) return;
-        
+        this.time += dt;
+        this.config.updateCallback(dt, this);
         this.escalators.forEach((escalator, index) => {
             escalator.update(dt);
             this.updateCrowdForEscalator(escalator, index, dt);
