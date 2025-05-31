@@ -14,7 +14,6 @@ body {
     font-family: monospace, sans-serif;
     margin: 0;
     overflow: hidden;
-    /*color: #333343;*/
     color: #333343;
 }
 
@@ -28,7 +27,7 @@ header {
     background: rgba( 150, 150, 150, 0.3 );
             backdrop-filter: blur( 3px );
     -webkit-backdrop-filter: blur( 3px );
-    border: 1px solid rgba( 150, 150, 150, 0.18 );
+    border: 1px solid rgba( 250, 250, 250, 0.3 );
 
     z-index: 1000;
     padding: 10px;
@@ -76,13 +75,80 @@ h2 .big {
     bottom: -1px;
     right: 0;
     transform: translate(0, 100%);
+    text-shadow: none;
+            backdrop-filter: blur( 3px );
+    -webkit-backdrop-filter: blur( 3px );
+    user-select: none;
 }
 
 #stats {
     position: absolute;
-    bottom: -1px;
+    bottom: 0px;
     left: 0;
     transform: translate(0, 100%);
+    width: 82px !important;
+}
+
+#stats > div{
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(250, 250, 250, 0.3) !important;
+}
+
+/* --- */
+
+#gui div.close-button {
+    /*display: none;*/
+    background: rgba( 230, 230, 230, 0.8 );
+            backdrop-filter: blur( 3px );
+    -webkit-backdrop-filter: blur( 3px );
+    color: rgba( 60, 60, 60, 0.8 );
+    border-radius: 0 0 5px 5px;
+}
+
+#gui li {
+    border-bottom-color: rgba( 100, 100, 100, 0.8 );
+}
+
+#gui li:not(.folder){
+    margin-left: 0;
+}
+#gui li.folder{
+    border-left: none;
+}
+
+#gui li.title,
+#gui li.cr.function {
+    padding-left: 17px;
+    background: rgba( 230, 230, 230, 0.9 );
+    text-shadow: none;
+    color: rgba( 30, 30, 30, 0.9 );
+}
+
+#gui ul li.title:before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 5px;
+    transform: translateY(calc(-50% + 0.5px));
+    width: 0; 
+    height: 0; 
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid rgba( 60, 60, 60, 0.8 );
+    transition: transform 0.1s ease-in-out;
+    border-radius: 1px;
+}
+
+#gui ul.closed li.title:before {
+    transform: translateY(calc(-50% + 0.5px)) rotate(-90deg);
+}
+
+/* The whole gui is closed */
+#gui > ul.closed + div.close-button {
+    background: rgba( 150, 150, 150, 0.3 );
+    color: #333343;
+    opacity: 0.8;
 }
 
 /* --- */
@@ -104,6 +170,57 @@ h2 .big {
     border: 1px solid rgba( 100, 100, 100, 0.3 );
 }
 
+/* --- */
+
+#record-indicator {
+    display: block;
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    color: rgba(220,15,30);
+    font-size: 16px;
+    font-family: 'CMBX10';
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur( 3px );
+    -webkit-backdrop-filter: blur( 3px );
+    border: 1px solid rgba( 255, 255, 255, 0.7 );
+    padding: 8px 8px 4px 28px;
+    border-radius: 4px;
+    z-index: 2000;
+    opacity: 0.0;
+    transition: opacity 0.08s;
+}
+
+#record-indicator.recording {
+    opacity: 1.0;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+#record-indicator:after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background: rgba(220,15,30);
+    animation: ease-in-out blink 0.7s infinite;
+    border-radius: 50%;
+}
 
 
 

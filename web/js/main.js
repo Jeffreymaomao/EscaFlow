@@ -3,10 +3,9 @@ import Grapher from "./Grapher.js";
 import Escalator from './Escalator.js';
 import Crowd from './Crowd.js';
 import Protal from './Protal.js';
-
 import Simulation from './Simulation.js';
-// ------------------------------------------
-// initialize grapher
+import Record from './Record.js';
+
 const grapher = new Grapher({
     cameraMinDistance: 1,
     cameraMaxDistance: 1000,
@@ -14,9 +13,13 @@ const grapher = new Grapher({
     isShowAxis: false,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
+    gui: true,
+    guiWidth: 200,
     backgroundColor: 0xbbbbbb,
-    isSaveCameraState: true,
+    isSaveCameraState: true
 });
+
+const record = new Record();
 
 const simulation = new Simulation(grapher, {
     escalatorPad: 1,
@@ -25,17 +28,34 @@ const simulation = new Simulation(grapher, {
     spacing: 20,
     isShowTargetLine: false,
     labelColor: 0x666666,
-    targetLineColor: 0xffd000,
+    targetLineColor: 0xfff000,
     portalOriginalColor: 0x881133,
     portalEnteringColor: 0x0088ff,
     crowdColor: 0x90b38b,
     crowdMaxSpeed: 4,
-    groundColor: 0x555556
+    groundColor: 0x555556,
+    isStartCallback: ()=>{
+        record.start();
+    },
+    isPauseCallback: ()=>{
+        record.stop();
+    },
 });
+
+const folder = {
+    object: grapher.gui.addFolder('Axes & Box'),
+    action: grapher.gui.addFolder('Actions')
+};
+Object.values(folder).forEach(f=>f.open());
+const controller = {
+    axes: folder.object.add(grapher, 'toggleAxis').name("Click to toggle axes"),
+    line: folder.object.add(simulation, 'toggleTargetLine').name("Click to toggle target line"),
+    pause: folder.action.add(simulation, 'togglePause').name("Click to pause/start simulation"),
+}
 
 window.addEventListener('load', async () => {
     await simulation.initialize();
-})
+});
 
 window.addEventListener('keydown', (e) => {
     if (e.key === ' ') {

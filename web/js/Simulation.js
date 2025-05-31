@@ -24,6 +24,8 @@ export default class Simulation {
             crowdMaxSpeed: config.crowdMaxSpeed || 4,
             crowdColor: 0x92CC92,
             groundColor: 0x333333,
+            isStartCallback: config.isStartCallback || (()=>{}),
+            isPauseCallback: config.isPauseCallback || (()=>{}),
             ...config
         };
         this.isPaused = true;
@@ -144,7 +146,8 @@ export default class Simulation {
                 new THREE.Vector3(0, 0, 3)
             )], {color: this.config.targetLineColor}
         );
-        this.targetLine = [l1, l2];
+        this.targetLine.push(l1);
+        this.targetLine.push(l2);
 
         if (this.config.isShowTargetLine) {
             this.showTargetLine();
@@ -153,11 +156,13 @@ export default class Simulation {
         }
     }
 
-    toogleTargetLine() {
-        this.targetLine.forEach(line => {
-            line.visible = !line.visible;
-        });
+    toggleTargetLine() {
         this.config.isShowTargetLine = !this.config.isShowTargetLine;
+        if (this.config.isShowTargetLine) {
+            this.showTargetLine();
+        } else {
+            this.hideTargetLine();
+        }
     }
 
     showTargetLine() {
@@ -182,6 +187,11 @@ export default class Simulation {
 
     togglePause() {
         this.isPaused = !this.isPaused;
+        if(this.isPaused) {
+            this.config.isPauseCallback();
+        } else {
+            this.config.isStartCallback();
+        }
     }
 
     step() {

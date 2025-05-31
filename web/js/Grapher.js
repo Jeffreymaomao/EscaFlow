@@ -26,14 +26,14 @@ class Grapher {
 
         if(config.gui) {
             var guiWidth = 245;
-            if(config.guiWidth) guiWidth =config.guiWidth
-            this.gui = new dat.GUI({ autoPlace: false, width: guiWidth})
+            if(config.guiWidth) guiWidth = config.guiWidth;
+            this.gui = new dat.GUI({autoPlace: false, width: guiWidth});
             this.gui.domElement.id = 'gui';
             document.querySelector('header').appendChild(this.gui.domElement);
         }
 
         if(config.stats) {
-            this.stats = Stats();
+            this.stats = new Stats();
             this.stats.domElement.id = 'stats';
             document.querySelector('header').appendChild(this.stats.domElement);
         }
@@ -134,7 +134,7 @@ class Grapher {
         document.body.appendChild(this.labelRenderer.domElement);
     }
 
-    toogleAxis() {
+    toggleAxis() {
         this.isShowAxis = !this.isShowAxis;
         if (this.isShowAxis) {
             this.showAxis();
