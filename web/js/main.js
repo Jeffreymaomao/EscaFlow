@@ -14,7 +14,7 @@ const grapher = new Grapher({
     isShowAxis: false,
     cameraPosition: new THREE.Vector3(1,-3, 3),
     stats: true,
-    backgroundColor: 0xfffbf7,
+    backgroundColor: 0xbbbbbb,
     isSaveCameraState: true,
 });
 
@@ -24,11 +24,13 @@ const simulation = new Simulation(grapher, {
     peopleNum: 300,
     spacing: 20,
     isShowTargetLine: false,
+    labelColor: 0x666666,
     targetLineColor: 0xffd000,
     portalOriginalColor: 0x881133,
     portalEnteringColor: 0x0088ff,
-    crowdColor: 0x82cc92,
+    crowdColor: 0x90b38b,
     crowdMaxSpeed: 4,
+    groundColor: 0x555556
 });
 
 window.addEventListener('load', async () => {

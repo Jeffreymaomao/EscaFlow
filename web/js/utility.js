@@ -20,10 +20,25 @@ function hash(input, length=8, chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
 
 const rand = (min=0,max=1)=> (max-min)*Math.random()+min;
 const clamp = (x, min=0,max=1)=> x < min ? min : (x > max ? max : x);
+const hex2css = (hex) => {
+    if (hex == null) return '#000000';
+    if (typeof hex === 'number') {
+        hex = hex.toString(16).padStart(6, '0');
+    }
+    if (hex.startsWith('#')) hex = hex.slice(1);
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+    if (hex.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(hex)) {
+        return '#000000';
+    }
+    return `#${hex.toLowerCase()}`;
+};
 
 
 export {
     hash,
     rand,
-    clamp
+    clamp,
+    hex2css
 };

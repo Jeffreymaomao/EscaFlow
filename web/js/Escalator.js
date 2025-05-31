@@ -17,6 +17,8 @@ export default class Escalator {
         this.size = new THREE.Vector3();
         this.box  = new THREE.Box3();
         this.groundSize = config.groundSize || new THREE.Vector2(1.0, 1.0);
+        this.groundColor = config.groundColor || 0x333333;
+
 
         const guessCount = this.url?.split('-').pop().split('.').shift();
         this.count = config.count || parseInt(guessCount) || 15;
@@ -121,11 +123,9 @@ export default class Escalator {
     addGround(scene) {
         const floorGeometry = new THREE.PlaneGeometry(this.groundSize.x, this.groundSize.y);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x333333,
+            color: this.groundColor,
             roughness: 0.99,
             metalness: 0.1,
-            // disable
-
             side: THREE.DoubleSide
         });
 
@@ -137,7 +137,7 @@ export default class Escalator {
     addStairs(scene) {
         const width = this.size.x * 0.85;
         const stairMaterial = new THREE.MeshStandardMaterial({
-            color: 0x333333,
+            color: this.groundColor,
             roughness: 0.8,
             metalness: 0.2
         });

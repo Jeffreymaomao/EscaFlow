@@ -3,7 +3,7 @@ import Grapher from "./Grapher.js";
 import Escalator from './Escalator.js';
 import Crowd from './Crowd.js';
 import Protal from './Protal.js';
-import {rand, clamp} from './utility.js';
+import {rand, clamp, hex2css} from './utility.js';
 
 
 export default class Simulation {
@@ -17,11 +17,13 @@ export default class Simulation {
             peopleNum: config.peopleNum || 200,
             spacing: config.spacing || 20,
             isShowTargetLine: config.isShowTargetLine || true,
+            labelColor: 0x777777,
             targetLineColor: config.targetLineColor || 0xffe844,
             portalOriginalColor: config.portalOriginalColor || 0x881133,
             portalEnteringColor: config.portalEnteringColor || 0x0088ff,
             crowdMaxSpeed: config.crowdMaxSpeed || 4,
             crowdColor: 0x92CC92,
+            groundColor: 0x333333,
             ...config
         };
         this.isPaused = true;
@@ -58,12 +60,29 @@ export default class Simulation {
                     scale: [0.8, 0.5, 0.5],
                     id: `Esca${stairsNum}-(${x},${y})`,
                     position: offset,
-                    groundSize: new THREE.Vector2(30, 30)
+                    groundSize: new THREE.Vector2(30, 30),
+                    groundColor: this.config.groundColor,
                 });
                 this.escalators.push(escalator);
+                this.createLabelForEscalator(escalator, `(${x},${y})`);
             }
         }
     }
+
+    createLabelForEscalator(escalator, text) {
+        const labelPos = new THREE.Vector3(
+            escalator.x0 + 0.5,
+            escalator.ymax + 0.7,
+            escalator.zmax + 0.8
+        );
+        this.grapher.createLabel(
+            text, labelPos, {
+                class:'escalator-label',
+                color: hex2css(this.config.labelColor)
+            }
+        );
+    }
+
     async loadEscalators() {
         const loadPromises = this.escalators.map(escalator => 
             new Promise(resolve => {
