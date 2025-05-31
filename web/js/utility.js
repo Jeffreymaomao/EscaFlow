@@ -18,6 +18,12 @@ function hash(input, length=8, chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     return result;
 }
 
+const rand = (min=0,max=1)=> (max-min)*Math.random()+min;
+const clamp = (x, min=0,max=1)=> x < min ? min : (x > max ? max : x);
+
+
 export {
-    hash
+    hash,
+    rand,
+    clamp
 };
