@@ -244,11 +244,10 @@ export default class Simulation {
     }
 
     update(ignorePause = false) {
-        const dt = clamp(this.clock.getDelta(), 1e-7, 1e-2);
-        
         if (!ignorePause && this.isPaused) return;
+        const dt = clamp(this.clock.getDelta(), 1e-7, 1e-2);
+        this.config.updateCallback(dt);
         this.time += dt;
-        this.config.updateCallback(dt, this);
         this.escalators.forEach((escalator, index) => {
             escalator.update(dt);
             this.updateCrowdForEscalator(escalator, index, dt);

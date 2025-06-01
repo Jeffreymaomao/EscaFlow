@@ -70,16 +70,7 @@ h2 .big {
     letter-spacing: 1.3px;
 }
 
-#gui {
-    position: absolute;
-    bottom: -1px;
-    right: 0;
-    transform: translate(0, 100%);
-    text-shadow: none;
-            backdrop-filter: blur( 3px );
-    -webkit-backdrop-filter: blur( 3px );
-    user-select: none;
-}
+/* --- */
 
 #stats {
     position: absolute;
@@ -99,7 +90,26 @@ h2 .big {
 
 /* --- */
 
+#gui {
+    position: absolute;
+    bottom: -1px;
+    right: 0;
+    transform: translate(0, 100%);
+    text-shadow: none;
+            backdrop-filter: blur( 3px );
+    -webkit-backdrop-filter: blur( 3px );
+    user-select: none;
+}
+
+#gui li, div.close-button {
+    line-height: 28px;
+    font-size: 12px;
+    font-family: 'CMBX10', monospace, sans-serif;
+}
+
 #gui div.close-button {
+    line-height: 22px;
+    font-size: 11px;
     background: rgba( 230, 230, 230, 0.95 );
             backdrop-filter: blur( 3px );
     -webkit-backdrop-filter: blur( 3px );
@@ -113,22 +123,58 @@ h2 .big {
 
 #gui li:not(.folder){
     margin-left: 0;
-    /*border-left-color: transparent;*/
 }
 #gui li.folder{
     border-left: none;
 }
 
 #gui li.title,
-#gui li.cr.function {
+#gui li.cr.function,
+#gui li.cr.number,
+#gui li.cr.boolean {
     padding-left: 17px;
     background: rgba( 230, 230, 230, 0.95 );
     text-shadow: none;
     color: rgba( 30, 30, 30, 0.9 );
 }
 
-#gui li.cr.function {
+#gui li.cr.function,
+#gui li.cr.number,
+#gui li.cr.boolean {
+    padding-left: 12px;
     background: rgba( 230, 230, 230, 0.8 );
+}
+
+#gui .c input[type=text],
+#gui .c .slider {
+    background: rgba( 255, 255, 255, 0.1 );
+    border: 1px solid rgba( 100, 100, 100, 0.8 );
+}
+
+#gui .c input[type=text] {
+    width: 35%;
+    padding-top: 3.2px;
+    height: 19px;
+}
+
+#gui .c input[type=text]:focus {
+    color: rgba( 10, 10, 10, 1.0 );
+}
+
+#gui li.cr.function {
+    border-left-color: rgb(220, 30, 50);
+}
+#gui li.cr.boolean {
+    border-left-color: rgb(80, 200, 80);
+}
+#gui li.cr.number {
+    border-left-color: rgb(109, 159, 200);
+}
+#gui  .c .slider-fg {
+    background: rgb(109, 159, 209);
+}
+#gui .c input[type=text] {
+    color: rgb(90, 140, 180);
 }
 
 #gui ul li.title:before {
@@ -153,9 +199,9 @@ h2 .big {
 
 /* The whole gui is closed */
 #gui > ul.closed + div.close-button {
-    background: rgba( 150, 150, 150, 0.3 );
-    color: #333343;
-    opacity: 0.8;
+    background: rgba( 150, 150, 150, 0.5 );
+    color: #eeeeee;
+    opacity: 0.9;
 }
 
 /* --- */

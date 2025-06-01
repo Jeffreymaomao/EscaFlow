@@ -1,5 +1,8 @@
 export default class Record {
-    constructor() {
+    constructor(config={}) {
+        this.config = {
+            ...config
+        }
         this.label = null;
         this.frames = [];
         this.isRecording = false;
