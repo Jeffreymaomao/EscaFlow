@@ -74,18 +74,24 @@ h2 .big {
 
 #stats {
     position: absolute;
-    bottom: 0px;
+    bottom: -0.5px;
     left: 0;
     transform: translate(0, 100%);
     width: 84px !important;
+    border-top: none !important;
 }
 
-#stats > div{
+#stats > div {
     background-color: rgba(250, 250, 250, 0.6) !important;
     border: 1px solid rgba(255, 255, 255, 0.9) !important;
     margin: 0 1px !important;
     border-top: none !important;
     border-radius: 0 0 5px 5px !important;
+}
+
+#stats > div > div {
+    margin: 0 !important;
+    text-align: center !important;
 }
 
 /* --- */
