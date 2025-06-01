@@ -36,7 +36,16 @@ const user = {
         initializeSimulation();
         record && record.clear();
         record && (record.time = 0.0);
-    }
+    },
+    strategy: 1,
+}
+
+const strategies =  {
+    'AlaAlaAla': 1,
+    'BlaBlaBla': 2,
+    'ClaClaCla': 3,
+    'DlaDlaDla': 4,
+    'ElaElaEla': 5,
 }
 
 record = new Record({
@@ -108,6 +117,7 @@ const controller = {
     num:      folder.simulate.add(user, 'peopleNum', 1, 1000, 1).name("People"),
     starts:   folder.simulate.add(user, 'stairsNum', 10, 30, 5).name("Stairs"),
     vmax:     folder.simulate.add(user, 'crowdMaxSpeed', 0.1, 10.0, 0.1).name("Max Speed"),
+    strategy: folder.simulate.add(user, 'strategy', strategies).name("Strategy"),
     restart:  folder.simulate.add(user, 'restart').name("Restart Simulation"),
     pause:    folder.action.add(user, 'togglePause').name("Pause / Start (Space)"),
     record:   folder.action.add(user, 'wantToRecord').name("Record"),

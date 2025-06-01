@@ -39,6 +39,7 @@ export default class Simulation {
         this.positionLabels = [];
         this.countLabels    = [];
         this.finishingNum   = [];
+        this.goLeftIndices  = [];
 
         this.currentIndex = { x: 0, y: 0 };
     }
@@ -47,8 +48,19 @@ export default class Simulation {
         this.createEscalators();
         await this.loadEscalators();
         this.setupAnimation();
+        this.initializeStrategy();
+
         this.onKeyDown = this.onKeyDown.bind(this);
         window.addEventListener('keydown', this.onKeyDown);
+    }
+
+    initializeStrategy() {
+        this.goLeftIndices = [];
+        for(let i= 0; i < this.config.peopleNum; i++) {
+            if (rand() < 0.2) {
+                this.goLeftIndices.push(i);
+            }
+        }
     }
 
     onKeyDown(e) {
@@ -307,7 +319,7 @@ export default class Simulation {
         const backwardRepulsionX = repulsion.x < 0.0 ? repulsion.x : 0.0;
         // the person is on the left
         if (pos.x < escalator.x0) {
-            if (personIndex % 10 !== 0 && !backwardRepulsionX) {
+            if (personIndex % 3 !== 0 && !backwardRepulsionX) {
                 pos.y += 1.0 * dt;
             }
         }
@@ -338,13 +350,21 @@ export default class Simulation {
         const goToStairs = escalator.getGoUpStairForce(pos);
         const wallForce  = escalator.getForceByWall(pos, box, vel);
         vel.addScaledVector(goToStairs, onStairPos ? 0 : 40.0*dt );
-        vel.addScaledVector(repulsion,  120.0*dt);
-        vel.addScaledVector(wallForce,  1000.0*dt);
+        vel.addScaledVector(repulsion,  400.0*dt);
+        vel.addScaledVector(wallForce, 1000.0*dt);
         vel.addScaledVector(vel,        -10.0*dt);
         if (vel.length() > crowd.maxSpeed) {
             vel.normalize().multiplyScalar(crowd.maxSpeed);
         }
-
+        if (escalator.readyToEnter(pos, box)) {
+            // vel.x += 2.0;
+            vel.x = 0;
+            if(this.goLeftIndices.includes(personIndex)) {
+                pos.x = escalator.aisleXL;
+            } else {
+                pos.x = escalator.aisleXR;
+            }
+        }
         pos.addScaledVector(vel, dt);
     }
 

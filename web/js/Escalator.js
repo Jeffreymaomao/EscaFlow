@@ -43,6 +43,8 @@ export default class Escalator {
             this.z0
         );
         this.groundPosition = new THREE.Vector3(0, 0, -0.24).add(this.position);
+        this.aisleXR = null;
+        this.aisleXL = null;
     }
 
     load(scene, onLoadCallback = null) {
@@ -60,7 +62,7 @@ export default class Escalator {
 
             this.box = new THREE.Box3().setFromObject(this.object);
             this.box.getSize(this.size);
-            this.updateThisHalfSize()
+            this.updateParameterAboutSize()
 
             this.addStairs();
             this.addGround();
@@ -70,12 +72,14 @@ export default class Escalator {
         });
     }
 
-    updateThisHalfSize() {
+    updateParameterAboutSize() {
         this.halfSize = new THREE.Vector3(
             this.size.x * 0.85 / 2,
             this.dy / 2,
             this.dz / 2
         );
+        this.aisleXR = this.x0 + this.size.x * 0.85 / 4;
+        this.aisleXL = this.x0 - this.size.x * 0.85 / 4;
     }
 
     getStairBox(singleStairPosition) {
@@ -226,6 +230,17 @@ export default class Escalator {
         return 0;
     }
 
+    readyToEnter(personPos, personBox) {
+        if (personBox.min.x < this.box.max.x &&
+            this.box.min.x < personBox.max.x &&
+            personBox.max.y > this.enteringPoint.y &&
+            personBox.max.y < this.exitingPoint.y
+        ) {
+            return true;
+        }
+        return false;
+    }
+
     getForceByWall(personPos, personBox, personVel) {
         const box = this.box;
         if (personBox.max.y < this.y0 - 3*this.dy) {
@@ -266,7 +281,7 @@ export default class Escalator {
         ) {
             // personVel.multiplyScalar(0.0001);
             personVel.x = 0.0;
-            const dist2LR = this.size.x * 0.85 * 0.4;
+            const dist2LR = this.size.x * 0.85 * 0.3;
             if (personPos.x>this.x0) {
                 const fxR = 1/(Math.pow(dr2R/dist2LR, 6)+1);
                 return new THREE.Vector3(-fxR, 0, 0);
