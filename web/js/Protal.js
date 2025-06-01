@@ -85,4 +85,32 @@ export default class Portal {
         scene.add(this.mesh);
         this.scene = scene;
     }
+
+    dispose() {
+        if (this.mesh) {
+            if (this.scene) {
+                this.scene.remove(this.mesh);
+            }
+
+            if (this.mesh.geometry) {
+                this.mesh.geometry.dispose();
+            }
+
+            if (this.mesh.material) {
+                if (Array.isArray(this.mesh.material)) {
+                    this.mesh.material.forEach(mat => mat.dispose());
+                } else {
+                    this.mesh.material.dispose();
+                }
+            }
+
+            this.mesh = null;
+        }
+
+        this.geometry = null;
+        this.material = null;
+        this.scene = null;
+        this.alreadyClear = true;
+    }
+
 }

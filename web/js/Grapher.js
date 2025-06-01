@@ -3,6 +3,8 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
+import Stats from './Stats.js';
+
 class Grapher {
     constructor(config={
         stats: false,
@@ -134,6 +136,27 @@ class Grapher {
         document.body.appendChild(this.labelRenderer.domElement);
     }
 
+    createLabel(text, position, config={}) {
+        const div = document.createElement('div');
+        div.className = 'label';
+        if(config.class) div.classList.add(config.class);
+        div.style.color = config.color || 'white';
+        if(katex){
+            katex.render(text, div, {
+                displayMode: true,
+                output: this.katexOutput,
+                throwOnError: true,
+                trust: true
+            });
+        } else {
+            div.textContent = text;
+        }
+        const label = new CSS2DObject(div);
+        label.position.copy(position);
+        this.scene.add(label);
+        return label;
+    }
+
     toggleAxis() {
         this.isShowAxis = !this.isShowAxis;
         if (this.isShowAxis) {
@@ -173,27 +196,6 @@ class Grapher {
         this.axisLabels[2] = this.createLabel("z", new THREE.Vector3(0.0, 0.0, this.axisLength), {class:'axis'});
         this.initLabel();
         if (!this.isShowAxis) this.hideAxis();
-    }
-
-    createLabel(text, position, config={}) {
-        const div = document.createElement('div');
-        div.className = 'label';
-        if(config.class) div.classList.add(config.class);
-        div.style.color = config.color || 'white';
-        if(katex){
-            katex.render(text, div, {
-                displayMode: true,
-                output: this.katexOutput,
-                throwOnError: true,
-                trust: true
-            });
-        } else {
-            div.textContent = text;
-        }
-        const label = new CSS2DObject(div);
-        label.position.copy(position);
-        this.scene.add(label);
-        return label;
     }
 
     saveCameraState() {
@@ -262,5 +264,27 @@ Grapher.prototype.addLine = function(pos_i, pos_f, config={}) {
     this.scene.add(line);
     return line;
 };
+
+Grapher.prototype.disposeObject = function(object) {
+    if (!object) return;
+    if (this.scene && object.parent === this.scene) {
+        this.scene.remove(object);
+    }
+    if (object.element && object.element.parentNode) {
+        object.element.parentNode.removeChild(object.element);
+        object.element = null;
+    }
+    object.traverse((child) => {
+        if (child.geometry) child.geometry.dispose?.();
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(mat => mat.dispose?.());
+            } else {
+                child.material.dispose?.();
+            }
+        }
+    });
+};
+
 
 export default Grapher;

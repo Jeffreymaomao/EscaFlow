@@ -33,6 +33,8 @@ export default class Crowd {
         this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         this.positions  = new Array(this.count).fill(null);
         this.velocities = new Array(this.count).fill(null);
+
+        this.isDisposed = false;
     }
 
     generateRandomPoint(offset=new THREE.Vector3(0, 0, 0)) {
@@ -82,7 +84,8 @@ export default class Crowd {
     }
 
     addToScene(scene) {
-        scene.add(this.mesh);
+        this.scene = scene;
+        this.scene.add(this.mesh);
     }
 
     getPersonBox(pos) {
@@ -105,7 +108,7 @@ export default class Crowd {
 
     isPersonAlreadyBumpIntoOther(pos, i) {
         for (let j = 0; j < this.count; j++) {
-            if (i === j) continue; // skip self
+            if (i === j) continue;
             if (pos.distanceTo(this.positions[j]) < this.minPeopleDistance * 0.5) return true;
         }
         return false;
@@ -143,6 +146,7 @@ export default class Crowd {
     }
 
     update(callback=()=>{}) {
+        if (this.isDisposed) return;
         const matrix = new THREE.Matrix4();
         const quaternion = new THREE.Quaternion();
         const rotationMatrix = new THREE.Matrix4();
@@ -169,5 +173,34 @@ export default class Crowd {
             this.mesh.setMatrixAt(i, matrix);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
+    }
+
+    dispose() {
+        if (this.isDisposed) {
+            console.warn('Crowd has already been disposed');
+            return;
+        }
+        if (this.scene && this.mesh) {
+            this.scene.remove(this.mesh);
+            this.scene = null;
+        }
+        if (this.geometry) {
+            this.geometry.dispose();
+            this.geometry = null;
+        }
+        if (this.material) {
+            this.material.dispose();
+            this.material = null;
+        }
+        if (this.mesh) {
+            this.mesh.dispose();
+            this.mesh = null;
+        }
+        this.positions  = null;
+        this.velocities = null;
+        this.position   = null;
+        this.halfSize   = null;
+        this.scene      = null;
+        this.isDisposed = true;
     }
 }

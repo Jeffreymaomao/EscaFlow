@@ -47,6 +47,7 @@ export default class Escalator {
     }
 
     load(scene, onLoadCallback = null) {
+        this.scene = scene;
         const loader = new GLTFLoader();
         loader.load(this.url, (gltf) => {
             this.object = gltf.scene;
@@ -56,14 +57,14 @@ export default class Escalator {
             this.object.scale.set(...this.scale);
             this.object.rotation.set(...this.rotation);
 
-            scene.add(this.object);
+            this.scene.add(this.object);
 
             this.box = new THREE.Box3().setFromObject(this.object);
             this.box.getSize(this.size);
             this.updateThisHalfSize()
 
-            this.addStairs(scene);
-            this.addGround(scene);
+            this.addStairs();
+            this.addGround();
             if (onLoadCallback) onLoadCallback(this.object);
         }, undefined, (error) => {
             console.error('Failed to load GLB:', error);
@@ -120,7 +121,7 @@ export default class Escalator {
         }
     }
 
-    addGround(scene) {
+    addGround() {
         const floorGeometry = new THREE.PlaneGeometry(this.groundSize.x, this.groundSize.y);
         const floorMaterial = new THREE.MeshStandardMaterial({
             color: this.groundColor,
@@ -129,12 +130,12 @@ export default class Escalator {
             side: THREE.DoubleSide
         });
 
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.position.set(...this.groundPosition);
-        scene.add(floor);
+        this.groundMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+        this.groundMesh.position.set(...this.groundPosition);
+        this.scene.add(this.groundMesh);
     }
 
-    addStairs(scene) {
+    addStairs() {
         const width = this.size.x * 0.85;
         const stairMaterial = new THREE.MeshStandardMaterial({
             color: this.groundColor,
@@ -161,22 +162,22 @@ export default class Escalator {
             matrix.setPosition(pos);
             instancedMesh.setMatrixAt(i, matrix);
         }
-        scene.add(instancedMesh);
+        this.scene.add(instancedMesh);
         this.staisMesh = instancedMesh;
 
         // --- start stair
         const startStairGeometry = new THREE.BoxGeometry(width, 0.3, 0.05);
-        const startStairMesh = new THREE.Mesh(startStairGeometry, stairMaterial);
-        startStairMesh.position.set(0, 0.1, -0.26);
-        startStairMesh.position.add(this.position);
-        scene.add(startStairMesh);
+        this.startStairMesh = new THREE.Mesh(startStairGeometry, stairMaterial);
+        this.startStairMesh.position.set(0, 0.1, -0.26);
+        this.startStairMesh.position.add(this.position);
+        this.scene.add(this.startStairMesh);
 
         // --- end stair
         const endStairGeometry = new THREE.BoxGeometry(width, 0.75, 0.08);
-        const endStairMesh = new THREE.Mesh(endStairGeometry, stairMaterial);
-        endStairMesh.position.set(0, this.size.y - 0.62, this.size.z - 0.8202);
-        endStairMesh.position.add(this.position);
-        scene.add(endStairMesh);
+        this.endStairMesh = new THREE.Mesh(endStairGeometry, stairMaterial);
+        this.endStairMesh.position.set(0, this.size.y - 0.62, this.size.z - 0.8202);
+        this.endStairMesh.position.add(this.position);
+        this.scene.add(this.endStairMesh);
     }
 
     getVelocity(pos) {
@@ -339,6 +340,49 @@ export default class Escalator {
             );
         }
         return null;
+    }
+
+    dispose() {
+        if (this.object) {
+            this.object.traverse((child) => {
+                if (child.isMesh) {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach((mat) => mat.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+            });
+            this.scene.remove(this.object);
+            this.object = null;
+        }
+        if (this.staisMesh) {
+            this.staisMesh.geometry.dispose();
+            if (this.staisMesh.material) this.staisMesh.material.dispose();
+            this.scene.remove(this.staisMesh);
+            this.staisMesh = null;
+        }
+        if (this.startStairMesh) {
+            this.startStairMesh.geometry.dispose();
+            this.startStairMesh.material.dispose();
+            this.scene.remove(this.startStairMesh);
+            this.startStairMesh = null;
+        }
+        if (this.endStairMesh) {
+            this.endStairMesh.geometry.dispose();
+            this.endStairMesh.material.dispose();
+            this.scene.remove(this.endStairMesh);
+            this.endStairMesh = null;
+        }
+        if (this.groundMesh) {
+            this.groundMesh.geometry.dispose();
+            this.groundMesh.material.dispose();
+            this.scene.remove(this.groundMesh);
+            this.groundMesh = null;
+        }
     }
 
 }

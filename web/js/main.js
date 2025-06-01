@@ -41,6 +41,11 @@ const simulation = new Simulation(grapher, {
         record.stop();
     },
     updateCallback: (dt)=>{
+        if(simulation.time>1){
+            simulation.togglePause();
+            console.log(`Simulation time: ${simulation.time.toFixed(6)} seconds`);
+            simulation.dispose();
+        }
     }
 });
 
@@ -57,25 +62,4 @@ const controller = {
 
 window.addEventListener('load', async () => {
     await simulation.initialize();
-});
-
-window.addEventListener('keydown', (e) => {
-    if (e.key === ' ') {
-        simulation.togglePause();
-        return;
-    }
-    
-    if (e.shiftKey && e.key === 'R') {
-        simulation.resetCamera();
-        return;
-    }
-    
-    if (e.key === 'ArrowRight') {
-        simulation.step();
-        return;
-    }
-    
-    if (['w', 's', 'a', 'd'].includes(e.key)) {
-        simulation.moveCamera(e.key);
-    }
 });

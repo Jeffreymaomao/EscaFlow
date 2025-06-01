@@ -30,12 +30,13 @@ export default class Simulation {
             updateCallback: config.updateCallback || (()=>{}),
             ...config
         };
-        this.isPaused = true;
-        this.escalators = [];
-        this.protals = [];
-        this.crowds = [];
+        this.isPaused      = true;
+        this.escalators    = [];
+        this.protals       = [];
+        this.crowds        = [];
         this.onStairPeople = [];
-        this.targetLine = [];
+        this.targetLines   = [];
+        this.labels        = [];
 
         this.currentIndex = { x: 0, y: 0 };
     }
@@ -44,6 +45,20 @@ export default class Simulation {
         this.createEscalators();
         await this.loadEscalators();
         this.setupAnimation();
+        this.onKeyDown = this.onKeyDown.bind(this);
+        window.addEventListener('keydown', this.onKeyDown);
+    }
+
+    onKeyDown(e) {
+        if (e.key === ' ') {
+            this.togglePause();
+        }else if (e.shiftKey && e.key === 'R') {
+            this.resetCamera();
+        }else if (e.key === 'ArrowRight') {
+            this.step();
+        }else if (['w', 's', 'a', 'd'].includes(e.key)) {
+            this.moveCamera(e.key);
+        }
     }
 
     getOffsetFromIndex(ix, iy) {
@@ -68,7 +83,8 @@ export default class Simulation {
                     groundColor: this.config.groundColor,
                 });
                 this.escalators.push(escalator);
-                this.createLabelForEscalator(escalator, `(${x},${y})`);
+                const label = this.createLabelForEscalator(escalator, `(${x},${y})`);
+                this.labels.push(label);
             }
         }
     }
@@ -79,7 +95,7 @@ export default class Simulation {
             escalator.ymax + 0.7,
             escalator.zmax + 0.8
         );
-        this.grapher.createLabel(
+        return this.grapher.createLabel(
             text, labelPos, {
                 class:'escalator-label',
                 color: hex2css(this.config.labelColor)
@@ -148,8 +164,8 @@ export default class Simulation {
                 new THREE.Vector3(0, 0, 3)
             )], {color: this.config.targetLineColor}
         );
-        this.targetLine.push(l1);
-        this.targetLine.push(l2);
+        this.targetLines.push(l1);
+        this.targetLines.push(l2);
 
         if (this.config.isShowTargetLine) {
             this.showTargetLine();
@@ -168,14 +184,14 @@ export default class Simulation {
     }
 
     showTargetLine() {
-        this.targetLine.forEach(line => {
+        this.targetLines.forEach(line => {
             line.visible = true;
         });
         this.config.isShowTargetLine = true;
     }
 
     hideTargetLine() {
-        this.targetLine.forEach(line => {
+        this.targetLines.forEach(line => {
             line.visible = false;
         });
         this.config.isShowTargetLine = false;
@@ -324,5 +340,14 @@ export default class Simulation {
                 onStairPeopleIndex, repulsion, dt, personIndex
             ); 
         });
+    }
+
+    dispose() {
+        this.labels.forEach(label => this.grapher.disposeObject(label));
+        this.targetLines.forEach(line => this.grapher.disposeObject(line));
+        this.escalators.forEach(escalator => escalator.dispose());
+        this.crowds.forEach(crowd => crowd.dispose());
+        this.protals.forEach(protal => protal.dispose());
+        window.removeEventListener('keydown', this.onKeyDown);
     }
 }
