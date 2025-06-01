@@ -30,13 +30,15 @@ export default class Simulation {
             updateCallback: config.updateCallback || (()=>{}),
             ...config
         };
-        this.isPaused      = true;
-        this.escalators    = [];
-        this.protals       = [];
-        this.crowds        = [];
-        this.onStairPeople = [];
-        this.targetLines   = [];
-        this.labels        = [];
+        this.isPaused       = true;
+        this.escalators     = [];
+        this.protals        = [];
+        this.crowds         = [];
+        this.onStairPeople  = [];
+        this.targetLines    = [];
+        this.positionLabels = [];
+        this.countLabels    = [];
+        this.finishingNum   = [];
 
         this.currentIndex = { x: 0, y: 0 };
     }
@@ -83,13 +85,16 @@ export default class Simulation {
                     groundColor: this.config.groundColor,
                 });
                 this.escalators.push(escalator);
-                const label = this.createLabelForEscalator(escalator, `(${x},${y})`);
-                this.labels.push(label);
+                const positionLabel = this.createPositionLabelForEscalator(escalator, `(${x},${y})`);
+                this.positionLabels.push(positionLabel);
+
+                const countLabel = this.createCountFinishingLabel(escalator, '0');
+                this.countLabels.push(countLabel);
             }
         }
     }
 
-    createLabelForEscalator(escalator, text) {
+    createPositionLabelForEscalator(escalator, text) {
         const labelPos = new THREE.Vector3(
             escalator.x0 + 0.5,
             escalator.ymax + 0.7,
@@ -97,7 +102,21 @@ export default class Simulation {
         );
         return this.grapher.createLabel(
             text, labelPos, {
-                class:'escalator-label',
+                class: ['escalator-label', 'id'],
+                color: hex2css(this.config.labelColor)
+            }
+        );
+    }
+
+    createCountFinishingLabel(escalator, text) {
+        const labelPos = new THREE.Vector3(
+            escalator.x0 - 0.5,
+            escalator.ymax + 0.6,
+            escalator.zmax + 0.8
+        );
+        return this.grapher.createLabel(
+            text, labelPos, {
+                class: ['escalator-label', 'count'],
                 color: hex2css(this.config.labelColor)
             }
         );
@@ -110,6 +129,7 @@ export default class Simulation {
                     this.createCrowdForEscalator(escalator);
                     this.createProtalForEscalator(escalator);
                     this.addTargetLine(escalator);
+                    this.finishingNum.push(0);
                     resolve();
                 });
             })
@@ -264,7 +284,18 @@ export default class Simulation {
 
     // main simulation logic
 
-    resetPersonForFinishing(personIndex, pos, vel, crowd, onStairPeopleIndex) {
+    resetPersonForFinishing(escalatorIndex, personIndex, pos, vel, crowd, onStairPeopleIndex) {
+        this.finishingNum[escalatorIndex]++;
+        let html = `${this.finishingNum[escalatorIndex]}`;
+        if(katex){
+            html = katex.renderToString(html, {
+                displayMode: true,
+                output: this.katexOutput,
+                throwOnError: true,
+                trust: true
+            });
+        }
+        this.countLabels[escalatorIndex].element.innerHTML = html;
         // if the person is finished, reset position and velocity
         pos.copy(crowd.generateRandomPoint());
         onStairPeopleIndex.delete(personIndex);
@@ -324,7 +355,7 @@ export default class Simulation {
         crowd.update((pos, vel, box, personIndex)=>{
             protal.updateColor(dt);
             if (escalator.isPersonFinished(pos)){
-                this.resetPersonForFinishing(personIndex, pos, vel, crowd, onStairPeopleIndex);
+                this.resetPersonForFinishing(index, personIndex, pos, vel, crowd, onStairPeopleIndex);
                 this.changePortalColorForEntering(protal);
                 return;
             }
@@ -346,10 +377,11 @@ export default class Simulation {
         return {
             header: {
                 t: 'time [code_time]',
-                e: 'escalator_id [index]',
+                e: 'escalator_id [dimensionless]',
                 x: 'position [code_length]',
                 v: 'position [code_length/code_time]',
-                s: 'on_stair_people_indices [index]',
+                s: 'on_stair_people_indices [dimensionless]',
+                f: 'finishing_number_of_people [dimensionless]',
             },
             escalatorNum: this.escalators.length,
             stairsNum: this.config.stairsNum,
@@ -368,11 +400,13 @@ export default class Simulation {
             x: this.crowds.map(c => vec3Arr2Array(c.positions)),
             v: this.crowds.map(c => vec3Arr2Array(c.velocities)),
             s: this.onStairPeople.map(s => Array.from(s)),
+            f: this.finishingNum.map(f => f),
         };
     }
 
     dispose() {
-        this.labels.forEach(label => this.grapher.disposeObject(label));
+        this.positionLabels.forEach(label => this.grapher.disposeObject(label));
+        this.countLabels.forEach(label => this.grapher.disposeObject(label));
         this.targetLines.forEach(line => this.grapher.disposeObject(line));
         this.escalators.forEach(escalator => escalator.dispose());
         this.crowds.forEach(crowd => crowd.dispose());

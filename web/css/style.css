@@ -216,17 +216,24 @@ h2 .big {
     margin: 0;
 }
 
-.escalator-label .katex-display{
+.escalator-label .katex-display {
     font-size: 8pt;
     padding: 2pt;
     border-radius: 3pt;
     position: absolute;
-    left: 0;
     bottom: 0;
-    background: rgba( 230, 230, 230, 0.5 );
+    background: rgba( 250, 250, 250, 0.6 );
             backdrop-filter: blur( 3px );
     -webkit-backdrop-filter: blur( 3px );
     border: 1px solid rgba( 100, 100, 100, 0.3 );
+}
+
+.escalator-label.id .katex-display {
+    left: 0;
+}
+.escalator-label.count .katex-display {
+    right: 0;
+    color: rgba( 200, 0, 30, 0.8 );
 }
 
 /* --- */

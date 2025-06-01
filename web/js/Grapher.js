@@ -140,6 +140,7 @@ class Grapher {
         const div = document.createElement('div');
         div.className = 'label';
         if(config.class) div.classList.add(config.class);
+        if(config.class instanceof Array) config.class.forEach(c=>div.classList.add(c));
         div.style.color = config.color || 'white';
         if(katex){
             katex.render(text, div, {
