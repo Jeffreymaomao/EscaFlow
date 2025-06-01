@@ -1,36 +1,51 @@
 export default class Record {
     constructor(config={}) {
-        this.config = {
-            ...config
-        }
+        Object.assign(this, {
+            downloadCallback: (()=>{}),
+        }, config);
         this.label = null;
         this.frames = [];
         this.isRecording = false;
         this.initRecordingLabel();
+
+        window.addEventListener('beforeunload', this.onBeforeUnload.bind(this));
+        window.addEventListener('keydown', this.onKeyDown.bind(this));
+    }
+
+    onBeforeUnload(e) {
+        this.clear();
+    }
+
+    onKeyDown(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            const filename = window.prompt("Enter filename to save the recording:", "recording.json");
+            this.download(filename);
+        }
     }
 
     start() {
-        this.label && this.label.classList.add('recording')
+        this.label && this.label.classList.add('recording');
         this.isRecording = true;
     }
 
     stop() {
-        this.label && this.label.classList.remove('recording')
+        this.label && this.label.classList.remove('recording');
         this.isRecording = false;
     }
 
     clear() {
-        this.frames = [];
+        if (!this.frames || this.frames.length === 0) return;
+        this.stop();
+        const confirmed = window.confirm("Clear recording?");
+        if (!confirmed) return;
+        this.frames.length = 0;
+        this.frames = null;
+        setTimeout(() => {this.frames = []}, 0);
     }
 
-    snapshot(data) {
+    add(data) {
         if (!this.isRecording) return;
-        // optional: deep copy if needed
-        const frame = data.map(({ pos, vel }) => ({
-            pos: pos.toArray(),
-            vel: vel.toArray()
-        }));
-        this.frames.push(frame);
+        this.frames.push(data);
     }
 
     initRecordingLabel() {
@@ -41,7 +56,8 @@ export default class Record {
     }
 
     download(filename = 'recording.json') {
-        const blob = new Blob([JSON.stringify(this.frames)], { type: 'application/json' });
+        const data = this?.downloadCallback(this.frames) || this.frames;
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

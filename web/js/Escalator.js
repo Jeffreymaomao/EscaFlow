@@ -19,7 +19,6 @@ export default class Escalator {
         this.groundSize = config.groundSize || new THREE.Vector2(1.0, 1.0);
         this.groundColor = config.groundColor || 0x333333;
 
-
         const guessCount = this.url?.split('-').pop().split('.').shift();
         this.count = config.count || parseInt(guessCount) || 15;
         this.pad = 4;

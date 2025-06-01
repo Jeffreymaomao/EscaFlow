@@ -253,12 +253,19 @@ var Stats = function () {
                 if ( _modesCount == 3 ) {
 
                     _mb = performance.memory.usedJSHeapSize * 0.000000954;
+
+                    const _gb = _mb > 1000 ? _mb * 0.001 : null;
+
                     _mbMin = Math.min( _mbMin, _mb );
                     _mbMax = Math.max( _mbMax, _mb );
 
                     updateGraph( _mbImageData.data, Math.min( 30, 30 - ( _mb / 2 ) ), 'mb' );
 
-                    _mbText.innerHTML = '<span style="font-weight:bold">' + Math.round( _mb ) + ' MB</span> (' + Math.round( _mbMin ) + '-' + Math.round( _mbMax ) + ')';
+                    if( _gb ) {
+                        _mbText.innerHTML = '<span style="font-weight:bold">' + _gb.toFixed(1) + ' GB</span> (' + (_mbMin*0.001).toFixed(2) .replace(/0+$/, '')+ '-' + ( _mbMax * 0.001 ).toFixed(1) + ')';
+                    } else {
+                        _mbText.innerHTML = '<span style="font-weight:bold">' + Math.round( _mb ) + ' MB</span> (' + Math.round( _mbMin ) + '-' + Math.round( _mbMax ) + ')';
+                    }
                     _mbContext.putImageData( _mbImageData, 0, 0 );
 
                 }

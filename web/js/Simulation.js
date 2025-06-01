@@ -3,7 +3,7 @@ import Grapher from "./Grapher.js";
 import Escalator from './Escalator.js';
 import Crowd from './Crowd.js';
 import Protal from './Protal.js';
-import {rand, clamp, hex2css} from './utility.js';
+import {rand, clamp, hex2css, vec3Arr2Array} from './utility.js';
 
 
 export default class Simulation {
@@ -245,15 +245,16 @@ export default class Simulation {
 
     update(ignorePause = false) {
         if (!ignorePause && this.isPaused) return;
-        const dt = clamp(this.clock.getDelta(), 1e-7, 1e-2);
-        this.config.updateCallback(dt);
+
+        let dt = clamp(this.clock.getDelta(), 1e-8, 1e-2);
+        dt = this.config.updateCallback(dt, this.time) || dt;
+
         this.time += dt;
         this.escalators.forEach((escalator, index) => {
             escalator.update(dt);
             this.updateCrowdForEscalator(escalator, index, dt);
         });
-    }
-
+    } 
 
     // For some visual effects
     changePortalColorForEntering(protal) {
@@ -339,6 +340,35 @@ export default class Simulation {
                 onStairPeopleIndex, repulsion, dt, personIndex
             ); 
         });
+    }
+
+    snapshotMeta() {
+        return {
+            header: {
+                t: 'time [code_time]',
+                e: 'escalator_id [index]',
+                x: 'position [code_length]',
+                v: 'position [code_length/code_time]',
+                s: 'on_stair_people_indices [index]',
+            },
+            escalatorNum: this.escalators.length,
+            stairsNum: this.config.stairsNum,
+            peopleNum: this.config.peopleNum,
+            crowdMaxSpeed: this.config.crowdMaxSpeed,
+            escalatorPosition: vec3Arr2Array(this.escalators.map(e => e.position)),
+            escalatorDy: this.escalators.map(e => e.dy),
+            escalatorDz: this.escalators.map(e => e.dz),
+        }
+    }
+
+    snapshot() {
+        return {
+            t: this.time,
+            e: this.escalators.map(e => e.id),
+            x: this.crowds.map(c => vec3Arr2Array(c.positions)),
+            v: this.crowds.map(c => vec3Arr2Array(c.velocities)),
+            s: this.onStairPeople.map(s => Array.from(s)),
+        };
     }
 
     dispose() {

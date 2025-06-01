@@ -26,21 +26,31 @@ const user = {
     escalatorPad: 1,
     spacing: 20,
     stairsNum: 20,
-    peopleNum: 300,
+    peopleNum: 150,
     crowdMaxSpeed: 4,
     wantToRecord: false,
+    recordDt: 0.01,
     toggleTargetLine: ()=> simulation && simulation.toggleTargetLine(),
     togglePause: ()=> simulation && simulation.togglePause(),
     restart: async ()=>{
         initializeSimulation();
-        record && record.stop();
+        record && record.clear();
+        record && (record.time = 0.0);
     }
 }
+
 record = new Record({
     time: 0.0,
-    dt: 0.01
+    dt: user.recordDt,
+    downloadCallback: (data)=>{
+        return {
+            meta: simulation && simulation.snapshotMeta(),
+            frames: data
+        }
+    }
 });
-console.log(user)
+
+window.record = record;
 
 initializeSimulation = async function (){
     if (simulation) simulation.dispose();
@@ -58,15 +68,30 @@ initializeSimulation = async function (){
         crowdMaxSpeed: user.crowdMaxSpeed,
         groundColor: 0x555556,
         isStartCallback: ()=>{
-            record.start();
+            user.wantToRecord && record.start();
         },
         isPauseCallback: ()=>{
             record.stop();
         },
-        updateCallback: (dt)=>{
+        updateCallback: (dt, now)=>{
+            if (Math.abs(now - record.time) < 1e-8) {
+                if (user.wantToRecord) {
+                    if (!record.isRecording) record.start();
+                    console.log(now.toFixed(3));
+                    simulation && record.add(simulation.snapshot());
+                } else {
+                    if (record.isRecording) record.stop();
+                }
+                record.time += record.dt;
+            }
+            if (now + dt > record.time) {
+                return dt = record.time - now;
+            }
+            return dt;
         }
     });
     await simulation.initialize();
+    window.simulation = simulation;
 }
 
 const folder = {
@@ -74,16 +99,19 @@ const folder = {
     simulate: grapher.gui.addFolder('Simulation'),
     action:   grapher.gui.addFolder('Actions'),
 };
+// grapher.gui.close();
 Object.values(folder).forEach(f=>f.open());
 const controller = {
-    axes:    folder.object.add(grapher, 'toggleAxis').name("Toggle Axes"),
-    line:    folder.object.add(user, 'toggleTargetLine').name("Toggle Target Line"),
-    num:     folder.simulate.add(user, 'peopleNum', 10, 1000, 10).name("People"),
-    starts:  folder.simulate.add(user, 'stairsNum', 10, 30, 5).name("Stairs"),
-    vmax:    folder.simulate.add(user, 'crowdMaxSpeed', 0.1, 10.0, 0.1).name("Max Speed"),
-    restart: folder.simulate.add(user, 'restart').name("Restart Simulation"),
-    pause:   folder.action.add(user, 'togglePause').name("Pause / Start (Space)"),
-    record:  folder.action.add(user, 'wantToRecord').name("Record"),
+    axes:     folder.object.add(grapher, 'toggleAxis').name("Toggle Axes"),
+    line:     folder.object.add(user, 'toggleTargetLine').name("Toggle Target Line"),
+    pad:      folder.simulate.add(user, 'escalatorPad', 0, 5, 1).name("Padding"),
+    num:      folder.simulate.add(user, 'peopleNum', 1, 1000, 1).name("People"),
+    starts:   folder.simulate.add(user, 'stairsNum', 10, 30, 5).name("Stairs"),
+    vmax:     folder.simulate.add(user, 'crowdMaxSpeed', 0.1, 10.0, 0.1).name("Max Speed"),
+    restart:  folder.simulate.add(user, 'restart').name("Restart Simulation"),
+    pause:    folder.action.add(user, 'togglePause').name("Pause / Start (Space)"),
+    record:   folder.action.add(user, 'wantToRecord').name("Record"),
+    recordDt: folder.action.add(user, 'recordDt', 0.01, 0.1, 0.01).name("Record Interval"),
 }
 
 window.addEventListener('load', async () => {

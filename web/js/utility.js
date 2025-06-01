@@ -35,10 +35,14 @@ const hex2css = (hex) => {
     return `#${hex.toLowerCase()}`;
 };
 
+function vec3Arr2Array(vecArr) {
+  return vecArr.map(v => [v.x, v.y, v.z]);
+}
 
 export {
     hash,
     rand,
     clamp,
-    hex2css
+    hex2css,
+    vec3Arr2Array
 };
