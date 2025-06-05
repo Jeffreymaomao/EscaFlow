@@ -86,7 +86,7 @@ export default class Simulation {
             this.resetCamera();
         }else if (e.key === 'ArrowRight') {
             this.step();
-        }else if (['w', 's', 'a', 'd'].includes(e.key)) {
+        }else if (!e.metaKey && !e.ctrlKey && !e.shiftKey && ['w', 's', 'a', 'd'].includes(e.key)) {
             this.moveCamera(e.key);
         }
     }
@@ -420,25 +420,25 @@ export default class Simulation {
     snapshotMeta() {
         return {
             header: {
-                t: 'time [code_time]',
-                e: 'escalator_id [dimensionless]',
-                x: 'position [code_length]',
-                v: 'position [code_length/code_time]',
-                s: 'on_stair_people_indices [dimensionless]',
-                f: 'finishing_number_of_people [dimensionless]',
+                t : 'time [code_time]',
+                x : 'position [code_length]',
+                v : 'position [code_length/code_time]',
+                s : 'on_stair_people_indices [dimensionless]',
+                f : 'finishing_number_of_people [dimensionless]',
             },
-            escalatorNum: this.escalators.length,
-            stairsNum: this.config.stairsNum,
-            peopleNum: this.config.peopleNum,
-            crowdMaxSpeed: this.config.crowdMaxSpeed,
-            escalatorPosition: vec3Arr2Array(this.escalators.map(e => e.position)),
-            escalatorDy: this.escalators.map(e => e.dy),
-            escalatorDz: this.escalators.map(e => e.dz),
-            strategy       : this.config.strategy,
-            goLeftProb     : this.config.goLeftProb,
-            goLeftWalkProb : this.config.goLeftWalkProb,
-            goLeftIndices  : this.goLeftIndices,
-            goLeftWalkIndices :this.goLeftWalkIndices,
+            escalatorId       : this.escalators.map(e => e.id),
+            escalatorNum      : this.escalators.length,
+            stairsNum         : this.config.stairsNum,
+            peopleNum         : this.config.peopleNum,
+            crowdMaxSpeed     : this.config.crowdMaxSpeed,
+            escalatorPosition : vec3Arr2Array(this.escalators.map(e => e.position)),
+            escalatorDy       : this.escalators.map(e => e.dy),
+            escalatorDz       : this.escalators.map(e => e.dz),
+            strategy          : this.config.strategy,
+            goLeftProb        : this.config.goLeftProb,
+            goLeftWalkProb    : this.config.goLeftWalkProb,
+            goLeftIndices     : this.goLeftIndices,
+            goLeftWalkIndices : this.goLeftWalkIndices,
         }
     }
 
@@ -452,7 +452,6 @@ export default class Simulation {
         }
         return {
             t: this.time,
-            e: this.escalators.map(e => e.id),
             x: this.crowds.map(c => vec3Arr2Array(c.positions)),
             v: this.crowds.map(c => vec3Arr2Array(c.velocities)),
             s: this.onStairPeople.map(s => Array.from(s)),
