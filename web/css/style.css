@@ -137,7 +137,8 @@ h2 .big {
 #gui li.title,
 #gui li.cr.function,
 #gui li.cr.number,
-#gui li.cr.boolean {
+#gui li.cr.boolean,
+#gui li.cr.string {
     padding-left: 17px;
     background: rgba( 230, 230, 230, 0.95 );
     text-shadow: none;
@@ -154,7 +155,8 @@ h2 .big {
 
 #gui li.cr.function,
 #gui li.cr.number,
-#gui li.cr.boolean {
+#gui li.cr.boolean,
+#gui li.cr.string {
     padding-left: 12px;
     background: rgba( 230, 230, 230, 0.8 );
 }

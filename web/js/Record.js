@@ -19,7 +19,9 @@ export default class Record {
     onKeyDown(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
             const filename = window.prompt("Enter filename to save the recording:", "recording.json");
-            this.download(filename);
+            if (filename) {
+                this.download(filename);
+            }
         }
     }
 

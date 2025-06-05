@@ -19,6 +19,11 @@ const grapher = new Grapher({
     isSaveCameraState: true
 });
 
+const strategies =  {
+    'Shift Position' : 'shiftPosition',
+    'Force Push'     : 'forcePush',
+    'Do Nothing'     : 'doNothing'
+}
 let record = null;
 let simulation = null;
 let initializeSimulation = null;
@@ -29,7 +34,11 @@ const user = {
     peopleNum: 150,
     crowdMaxSpeed: 4,
     wantToRecord: false,
+    minimalSnapshop: true,
     recordDt: 0.01,
+    strategy: 'doNothing',
+    goLeftProb: 0.1,
+    goLeftWalkProb: 0.1,
     toggleTargetLine: ()=> simulation && simulation.toggleTargetLine(),
     togglePause: ()=> simulation && simulation.togglePause(),
     restart: async ()=>{
@@ -37,15 +46,20 @@ const user = {
         record && record.clear();
         record && (record.time = 0.0);
     },
-    strategy: 1,
 }
 
-const strategies =  {
-    'AlaAlaAla': 1,
-    'BlaBlaBla': 2,
-    'ClaClaCla': 3,
-    'DlaDlaDla': 4,
-    'ElaElaEla': 5,
+const params = new URLSearchParams(window.location.search);
+for (const [key, value] of params.entries()) {
+    if (key in user) {
+        const originalType = typeof user[key];
+        if (originalType === 'number') {
+            user[key] = Number(value);
+        } else if (originalType === 'boolean') {
+            user[key] = value === 'true';
+        } else {
+            user[key] = value;
+        }
+    }
 }
 
 record = new Record({
@@ -76,6 +90,9 @@ initializeSimulation = async function (){
         crowdColor: 0x90b38b,
         crowdMaxSpeed: user.crowdMaxSpeed,
         groundColor: 0x555556,
+        strategy: user.strategy,
+        goLeftProb: user.goLeftProb,
+        goLeftWalkProb: user.goLeftWalkProb,
         isStartCallback: ()=>{
             user.wantToRecord && record.start();
         },
@@ -87,7 +104,7 @@ initializeSimulation = async function (){
                 if (user.wantToRecord) {
                     if (!record.isRecording) record.start();
                     console.log(now.toFixed(3));
-                    simulation && record.add(simulation.snapshot());
+                    simulation && record.add(simulation.snapshot(user.minimalSnapshop));
                 } else {
                     if (record.isRecording) record.stop();
                 }
@@ -106,24 +123,41 @@ initializeSimulation = async function (){
 const folder = {
     object:   grapher.gui.addFolder('Axes & Line'),
     simulate: grapher.gui.addFolder('Simulation'),
-    action:   grapher.gui.addFolder('Actions'),
+    action:   grapher.gui.addFolder('Record Setup'),
 };
 // grapher.gui.close();
 Object.values(folder).forEach(f=>f.open());
 const controller = {
-    axes:     folder.object.add(grapher, 'toggleAxis').name("Toggle Axes"),
-    line:     folder.object.add(user, 'toggleTargetLine').name("Toggle Target Line"),
-    pad:      folder.simulate.add(user, 'escalatorPad', 0, 5, 1).name("Padding"),
-    num:      folder.simulate.add(user, 'peopleNum', 1, 1000, 1).name("People"),
-    starts:   folder.simulate.add(user, 'stairsNum', 10, 30, 5).name("Stairs"),
-    vmax:     folder.simulate.add(user, 'crowdMaxSpeed', 0.1, 10.0, 0.1).name("Max Speed"),
-    strategy: folder.simulate.add(user, 'strategy', strategies).name("Strategy"),
-    restart:  folder.simulate.add(user, 'restart').name("Restart Simulation"),
-    pause:    folder.action.add(user, 'togglePause').name("Pause / Start (Space)"),
-    record:   folder.action.add(user, 'wantToRecord').name("Record"),
-    recordDt: folder.action.add(user, 'recordDt', 0.01, 0.1, 0.01).name("Record Interval"),
+    toggleAxis       : folder.object.add(grapher, 'toggleAxis').name("Toggle Axes"),
+    toggleTargetLine : folder.object.add(user, 'toggleTargetLine').name("Toggle Target Line"),
+    togglePause      : folder.simulate.add(user, 'togglePause').name("Pause / Start (Space)"),
+    escalatorPad     : folder.simulate.add(user, 'escalatorPad', 0, 5, 1).name("Padding"),
+    peopleNum        : folder.simulate.add(user, 'peopleNum', 1, 1000, 1).name("People"),
+    stairsNum        : folder.simulate.add(user, 'stairsNum', 10, 30, 5).name("Stairs"),
+    crowdMaxSpeed    : folder.simulate.add(user, 'crowdMaxSpeed', 0.1, 10.0, 0.1).name("Max Speed"),
+    strategy         : folder.simulate.add(user, 'strategy', strategies).name("Strategy"),
+    goLeftProb       : folder.simulate.add(user, 'goLeftProb', 0.0, 1.0, 0.1).name("Left P"),
+    goLeftWalkProb   : folder.simulate.add(user, 'goLeftWalkProb', 0.0, 1.0, 0.1).name("Walk(L) P"),
+    restart          : folder.simulate.add(user, 'restart').name("Restart Simulation"),
+    wantToRecord     : folder.action.add(user, 'wantToRecord').name("Record"),
+    recordDt         : folder.action.add(user, 'recordDt', 0.01, 0.1, 0.01).name("Interval"),
+    minimalSnapshop  : folder.action.add(user, 'minimalSnapshop').name("Minimize"),
+
 }
 
 window.addEventListener('load', async () => {
     await initializeSimulation();
 });
+
+function updateURLParam(key, value) {
+    const params = new URLSearchParams(window.location.search);
+    params.set(key, value);
+    const newURL = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newURL);
+}
+
+for (const [key, guiItem] of Object.entries(controller)) {
+    if (guiItem && guiItem.onChange && key in user && !(user[key] instanceof Function)) {
+        guiItem.onChange(value => updateURLParam(key, value));
+    }
+}

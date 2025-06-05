@@ -25,6 +25,9 @@ export default class Simulation {
             crowdMaxSpeed: config.crowdMaxSpeed || 4,
             crowdColor: 0x92CC92,
             groundColor: 0x333333,
+            strategy: null,
+            goLeftProb: 0.0,
+            goLeftWalkProb: 0.0,
             isStartCallback: config.isStartCallback || (()=>{}),
             isPauseCallback: config.isPauseCallback || (()=>{}),
             updateCallback: config.updateCallback || (()=>{}),
@@ -39,7 +42,9 @@ export default class Simulation {
         this.positionLabels = [];
         this.countLabels    = [];
         this.finishingNum   = [];
+
         this.goLeftIndices  = [];
+        this.goLeftWalkIndices = [];
 
         this.currentIndex = { x: 0, y: 0 };
     }
@@ -55,10 +60,21 @@ export default class Simulation {
     }
 
     initializeStrategy() {
-        this.goLeftIndices = [];
+        const strategy = this.config.strategy;
+        if (strategy==='forcePush'){
+            console.log("Force Push [Strategy]");
+        } else if (strategy==='shiftPosition'){
+            console.log("Shift Position [Strategy]");
+        } else if (strategy==='doNothing') {
+            console.log("Do Nothing [Strategy]");
+        }
+
         for(let i= 0; i < this.config.peopleNum; i++) {
-            if (rand() < 0.2) {
+            if (rand() < this.config.goLeftProb) {
                 this.goLeftIndices.push(i);
+            }
+            if (rand() < this.config.goLeftWalkProb) {
+                this.goLeftWalkIndices.push(i);
             }
         }
     }
@@ -278,7 +294,7 @@ export default class Simulation {
     update(ignorePause = false) {
         if (!ignorePause && this.isPaused) return;
 
-        let dt = clamp(this.clock.getDelta(), 1e-8, 1e-2);
+        let dt = clamp(this.clock.getDelta(), 1e-5, 1e-2);
         dt = this.config.updateCallback(dt, this.time) || dt;
 
         this.time += dt;
@@ -319,7 +335,7 @@ export default class Simulation {
         const backwardRepulsionX = repulsion.x < 0.0 ? repulsion.x : 0.0;
         // the person is on the left
         if (pos.x < escalator.x0) {
-            if (personIndex % 3 !== 0 && !backwardRepulsionX) {
+            if (this.goLeftWalkIndices.includes(personIndex)) {
                 pos.y += 1.0 * dt;
             }
         }
@@ -357,12 +373,20 @@ export default class Simulation {
             vel.normalize().multiplyScalar(crowd.maxSpeed);
         }
         if (escalator.readyToEnter(pos, box)) {
-            // vel.x += 2.0;
-            vel.x = 0;
-            if(this.goLeftIndices.includes(personIndex)) {
-                pos.x = escalator.aisleXL;
-            } else {
-                pos.x = escalator.aisleXR;
+            if (this.config.strategy==='forcePush'){
+                if (this.goLeftIndices.includes(personIndex)) {
+                    vel.x -= 1.0;
+                } else {
+                    vel.x += 1.0;
+                }
+            } else if (this.config.strategy==='shiftPosition'){
+                if (this.goLeftIndices.includes(personIndex)) {
+                    pos.x = escalator.aisleXL;
+                } else {
+                    pos.x = escalator.aisleXR;
+                }
+            } else if (this.config.strategy==='doNothing') {
+
             }
         }
         pos.addScaledVector(vel, dt);
@@ -410,10 +434,22 @@ export default class Simulation {
             escalatorPosition: vec3Arr2Array(this.escalators.map(e => e.position)),
             escalatorDy: this.escalators.map(e => e.dy),
             escalatorDz: this.escalators.map(e => e.dz),
+            strategy       : this.config.strategy,
+            goLeftProb     : this.config.goLeftProb,
+            goLeftWalkProb : this.config.goLeftWalkProb,
+            goLeftIndices  : this.goLeftIndices,
+            goLeftWalkIndices :this.goLeftWalkIndices,
         }
     }
 
-    snapshot() {
+    snapshot(minimal = false) {
+        if (minimal) {
+            return {
+                t: this.time,
+                e: this.escalators.map(e => e.id),
+                f: this.finishingNum.map(f => f),
+            };
+        }
         return {
             t: this.time,
             e: this.escalators.map(e => e.id),
