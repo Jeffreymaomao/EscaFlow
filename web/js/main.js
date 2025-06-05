@@ -67,7 +67,7 @@ record = new Record({
     dt: user.recordDt,
     downloadCallback: (data)=>{
         return {
-            filename: `EscaFlow-${user.strategy}-L${user.goLeftProb}-LW${user.goLeftWalkProb}-${user.minimalSnapshop ? 'min' : 'full'}.json`,
+            filename: `EscaFlow-${user.strategy}-L${user.goLeftProb.toFixed(2)}-LW${user.goLeftWalkProb.toFixed(2)}-${user.minimalSnapshop ? 'min' : 'full'}.json`,
             meta: simulation && simulation.snapshotMeta(),
             frames: data
         }

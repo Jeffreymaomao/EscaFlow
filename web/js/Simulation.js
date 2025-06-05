@@ -447,7 +447,6 @@ export default class Simulation {
         if (minimal) {
             return {
                 t: this.time,
-                e: this.escalators.map(e => e.id),
                 f: this.finishingNum.map(f => f),
             };
         }
