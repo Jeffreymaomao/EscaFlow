@@ -73,6 +73,18 @@ record = new Record({
         }
     }
 });
+const time_dom = document.createElement('div');
+document.body.appendChild(time_dom);
+katex.render(`t = 0.00`, time_dom, {
+    throwOnError: false, displayMode: false,
+});
+time_dom.id = 'time';
+time_dom.style.position = 'absolute';
+time_dom.style.left = '30px';
+time_dom.style.bottom = '16px';
+time_dom.style.zIndex = '1000';
+time_dom.style.color = '#ffffff';
+const time_dom_float_dom = time_dom.querySelectorAll('.mord')[1];
 
 initializeSimulation = async function (){
     if (simulation) simulation.dispose();
@@ -100,6 +112,7 @@ initializeSimulation = async function (){
         },
         updateCallback: (dt, now)=>{
             if (Math.abs(now - record.time) < 1e-8) {
+                time_dom_float_dom.textContent = now.toFixed(2);
                 if (user.wantToRecord) {
                     if (!record.isRecording) record.start();
                     simulation && record.add(simulation.snapshot(user.minimalSnapshop));
