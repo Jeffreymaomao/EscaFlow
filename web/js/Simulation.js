@@ -294,7 +294,7 @@ export default class Simulation {
     update(ignorePause = false) {
         if (!ignorePause && this.isPaused) return;
 
-        let dt = clamp(this.clock.getDelta(), 1e-5, 1e-2);
+        let dt = clamp(this.clock.getDelta(), 1e-5, 5e-3);
         dt = this.config.updateCallback(dt, this.time) || dt;
 
         this.time += dt;

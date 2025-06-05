@@ -67,6 +67,7 @@ record = new Record({
     dt: user.recordDt,
     downloadCallback: (data)=>{
         return {
+            filename: `EscaFlow-${user.strategy}-L${user.goLeftProb}-LW${user.goLeftWalkProb}-${user.minimalSnapshop ? 'min' : 'full'}.json`,
             meta: simulation && simulation.snapshotMeta(),
             frames: data
         }
@@ -103,7 +104,6 @@ initializeSimulation = async function (){
             if (Math.abs(now - record.time) < 1e-8) {
                 if (user.wantToRecord) {
                     if (!record.isRecording) record.start();
-                    console.log(now.toFixed(3));
                     simulation && record.add(simulation.snapshot(user.minimalSnapshop));
                 } else {
                     if (record.isRecording) record.stop();

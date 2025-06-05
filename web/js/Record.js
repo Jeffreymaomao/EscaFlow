@@ -18,9 +18,16 @@ export default class Record {
 
     onKeyDown(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-            const filename = window.prompt("Enter filename to save the recording:", "recording.json");
+            let filename = `${new Date()}.json`;
+            const callbackData = this?.downloadCallback(this.frames);
+            if (callbackData) {
+                filename = callbackData.filename || filename;
+                delete callbackData.filename;
+            }
+            const data = callbackData || this.frames;
+            filename = window.prompt("Enter filename to save the recording:", filename);
             if (filename) {
-                this.download(filename);
+                this.download(data);
             }
         }
     }
@@ -57,8 +64,7 @@ export default class Record {
         document.body.appendChild(this.label);
     }
 
-    download(filename = 'recording.json') {
-        const data = this?.downloadCallback(this.frames) || this.frames;
+    download(data, filename = 'recording.json') {
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
