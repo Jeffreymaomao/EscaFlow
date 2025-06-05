@@ -26,7 +26,7 @@ export default class Record {
         const data = callbackData || this.frames;
         if (isPrompt) filename = window.prompt("Enter filename to save the recording:", filename);
         if (filename) {
-            this.download(data);
+            this.download(data, filename);
         }
     }
 
