@@ -36,7 +36,7 @@ const user = {
     wantToRecord: false,
     minimalSnapshop: true,
     recordDt: 0.01,
-    strategy: 'doNothing',
+    strategy: 'shiftPosition',
     goLeftProb: 0.1,
     goLeftWalkProb: 0.1,
     toggleTargetLine: ()=> simulation && simulation.toggleTargetLine(),
@@ -62,12 +62,24 @@ for (const [key, value] of params.entries()) {
     }
 }
 
+function filenameTemplate() {
+    const S = user.strategy;
+    const L = user.goLeftProb.toFixed(2);
+    const W = user.goLeftWalkProb.toFixed(2);
+    const N = user.peopleNum.toFixed(0);
+    const V = user.crowdMaxSpeed.toFixed(2);
+    const m = user.minimalSnapshop ? 'min' : 'full';
+    const n = user.stairsNum.toFixed(0);
+
+    return `Esca${n}_${strategy}_L${L}_LW${W}_N${N}_V${V}_${m}.json`;
+}
+
 record = new Record({
     time: 0.0,
     dt: user.recordDt,
     downloadCallback: (data)=>{
         return {
-            filename: `EscaFlow-${user.strategy}-L${user.goLeftProb.toFixed(2)}-LW${user.goLeftWalkProb.toFixed(2)}-${user.minimalSnapshop ? 'min' : 'full'}.json`,
+            filename: filenameTemplate(),
             meta: simulation && simulation.snapshotMeta(),
             frames: data
         }
