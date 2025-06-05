@@ -74,8 +74,6 @@ record = new Record({
     }
 });
 
-window.record = record;
-
 initializeSimulation = async function (){
     if (simulation) simulation.dispose();
     simulation = new Simulation(grapher, {
@@ -117,7 +115,11 @@ initializeSimulation = async function (){
         }
     });
     await simulation.initialize();
-    window.simulation = simulation;
+    window.simulation  = simulation;
+    window.restart     = user.restart;
+    window.togglePause = user.togglePause;
+    window.record      = record;
+    window.save        = record?.save;
 }
 
 const folder = {

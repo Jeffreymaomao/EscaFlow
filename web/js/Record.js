@@ -16,19 +16,24 @@ export default class Record {
         this.clear();
     }
 
+    save(isPrompt=false) {
+        let filename = `${new Date()}.json`;
+        const callbackData = this?.downloadCallback(this.frames);
+        if (callbackData) {
+            filename = callbackData.filename || filename;
+            delete callbackData.filename;
+        }
+        const data = callbackData || this.frames;
+        if (isPrompt) filename = window.prompt("Enter filename to save the recording:", filename);
+        if (filename) {
+            this.download(data);
+        }
+    }
+
     onKeyDown(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-            let filename = `${new Date()}.json`;
-            const callbackData = this?.downloadCallback(this.frames);
-            if (callbackData) {
-                filename = callbackData.filename || filename;
-                delete callbackData.filename;
-            }
-            const data = callbackData || this.frames;
-            filename = window.prompt("Enter filename to save the recording:", filename);
-            if (filename) {
-                this.download(data);
-            }
+            e.preventDefault();
+            this.save(true);
         }
     }
 

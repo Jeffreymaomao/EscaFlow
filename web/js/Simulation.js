@@ -86,7 +86,8 @@ export default class Simulation {
             this.resetCamera();
         }else if (e.key === 'ArrowRight') {
             this.step();
-        }else if (!e.metaKey && !e.ctrlKey && !e.shiftKey && ['w', 's', 'a', 'd'].includes(e.key)) {
+        // }else if (!e.metaKey && !e.ctrlKey && !e.shiftKey && ['w', 's', 'a', 'd'].includes(e.key)) {
+        }else if (e.altKey && ['w', 's', 'a', 'd'].includes(e.key)) {
             this.moveCamera(e.key);
         }
     }
