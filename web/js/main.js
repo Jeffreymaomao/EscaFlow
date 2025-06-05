@@ -119,7 +119,7 @@ initializeSimulation = async function (){
     window.restart     = user.restart;
     window.togglePause = user.togglePause;
     window.record      = record;
-    window.save        = record?.save;
+    window.save        = record?.save.bind(record);
 }
 
 const folder = {
