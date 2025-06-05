@@ -71,7 +71,7 @@ function filenameTemplate() {
     const m = user.minimalSnapshop ? 'min' : 'full';
     const n = user.stairsNum.toFixed(0);
 
-    return `Esca${n}_${strategy}_L${L}_LW${W}_N${N}_V${V}_${m}.json`;
+    return `Esca${n}_${S}_L${L}_LW${W}_N${N}_V${V}_${m}.json`;
 }
 
 record = new Record({
