@@ -24,11 +24,16 @@ const strategies =  {
     'Force Push'     : 'forcePush',
     'Do Nothing'     : 'doNothing'
 }
+
+
 let record = null;
 let simulation = null;
 let initializeSimulation = null;
+function isMobile() {
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 const user = {
-    escalatorPad: 1,
+    escalatorPad: isMobile() ? 0 : 1,
     spacing: 20,
     stairsNum: 20,
     peopleNum: 150,
@@ -145,6 +150,10 @@ initializeSimulation = async function (){
     window.togglePause = user.togglePause;
     window.record      = record;
     window.save        = record?.save.bind(record);
+
+    if (isMobile()){
+        simulation.togglePause()
+    }
 }
 
 const folder = {
@@ -152,8 +161,12 @@ const folder = {
     simulate: grapher.gui.addFolder('Simulation'),
     action:   grapher.gui.addFolder('Record Setup'),
 };
-// grapher.gui.close();
 Object.values(folder).forEach(f=>f.open());
+
+if (isMobile()){
+    grapher.gui.close();
+}
+
 const controller = {
     toggleAxis       : folder.object.add(grapher, 'toggleAxis').name("Toggle Axes"),
     toggleTargetLine : folder.object.add(user, 'toggleTargetLine').name("Toggle Target Line"),
